@@ -32,7 +32,7 @@ br.set_handle_robots(False)
 Select a form using select_form() with the name of the form as the argument:
 
 {% highlight python %}
-
+br.select_form('searchForm')
 {% endhighlight %}
 
 ### Form selection using a predicate function
@@ -109,7 +109,7 @@ Sometimes you can't just call submit() because there's more than one submit butt
 and you want mechanize to choose a specific one. A common scenario is when one of 
 these buttons is for 'Search' and the other will be for 'Reset'ing the form:
 
-{% highlight %}
+{% highlight html %}
 <form name="searchForm" method="post" action="search.do">
   ...
   <input type="image" name="reset" src="Reset.gif" alt="Reset Form">
@@ -130,7 +130,6 @@ or specify the name:
 {% highlight python %}
 br.select_form('searchForm')
 br.submit(name='input')
-{% highlight python %}
 {% endhighlight %}
 
 ### putting response into BeautifulSoup
