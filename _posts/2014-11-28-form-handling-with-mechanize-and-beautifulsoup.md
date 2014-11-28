@@ -38,13 +38,13 @@ br.select_form('searchForm')
 If the form does not have a name attribute, you can use a predicate function to select the form based off
 of one of its other attributes. 
 
-For instance, the following form has no name attribute:
+For instance, the following form has no `name` attribute:
 
 {% highlight html %}
 <form method="post" action="/en/search/" id="form1">
 {% endhighlight %}
 
-We can select this form by filtering based on its id.
+We can select this form by filtering based on its `id`.
 
 {% highlight python %}
 def select_form(form):
@@ -54,7 +54,7 @@ br.select_form(predicate=select_form)
 br.submit()
 {% endhighlight %}
 
-Or we can select against the form's action instead:
+Or we can select against the form's `action` instead:
 
 {% highlight python %}
 def select_form(form):
@@ -68,7 +68,7 @@ br.submit()
 
 You can select links in a similar fashion. The following code
 selects and follows an iframe using a predicate function to identify
-it based on its tag and id:
+it based on its `tag` and `id`:
 
 {% highlight python %}
 def select_iframe(iframe):
@@ -179,7 +179,7 @@ submit them one a time to get the results for each item:
 <option value="2">Cheddar</option>
 <option value="3">Provolone</option>
 </select>       
-
+{% endhighlight %}
 
 {% highlight python %}
 br.select_form(predicate=select_form)
