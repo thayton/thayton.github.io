@@ -105,7 +105,7 @@ br.submit()
 
 Sometimes you can't just call `submit` because there's more than one submit button 
 and you want mechanize to choose a specific one. A common scenario is when one of 
-these buttons is for 'Search' and the other will be for 'Reset'ing the form:
+these buttons is for 'Search' and the other is for 'Reset'ing the form:
 
 {% highlight html %}
 <form name="searchForm" method="post" action="search.do">
@@ -128,44 +128,6 @@ or specify the name:
 {% highlight python %}
 br.select_form('searchForm')
 br.submit(name='input')
-{% endhighlight %}
-
-### putting response into BeautifulSoup
-
-### Simulating AJAX requests
-
-{% highlight python %}
-# arbornetworks.py
-url = 'http://arbornetworks.jobs/ajax/joblisting/?num_items=50&offset=0'
-
-d = url_query_get(url, ['num_items', 'offset'])
-num_items = int(d['num_items'])
-offset = int(d['offset'])
-
-br.addheaders = [('X-Requested-With', 'XMLHttpRequest')]
-br.open(url)
-
-...
-
-# Next page of items  
-offset += num_items
-u = url_query_add(br.geturl(), {'offset': '%d' % offset}.items())
-br.open(u)
-
-# apple.py
-data_orig = { 'searchRequestJson': '{"searchString":"","jobType":1,"filters":{"locations":null,"retailJobSpecs":null,"businessLine":null,"jobFunctions":null,"languageSkills":null},"sortBy":"req_open_dt","sortOrder":"1","pageNumber":"%d"}',
-               'csrfToken': 'null',
-               'clientOffset': '-300'
-            }
-
-data = data_orig.copy()
-data['searchRequestJson'] = data['searchRequestJson'] % pageno
-pageno += 1
-
-data = urllib.urlencode(data)
-resp = mechanize.Request('https://jobs.apple.com/us/search/search-result', data)
-
-r = mechanize.urlopen(resp)
 {% endhighlight %}
 
 ### handling 'ParseError: OPTION outside of SELECT' by prettyfing form
