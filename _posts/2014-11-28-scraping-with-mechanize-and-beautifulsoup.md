@@ -150,4 +150,16 @@ for control in br.form.controls[:]:
 
 ### getting a list of items
 
-### sending ajax requests
+{% highlight python %}
+br.select_form(predicate=select_form)
+items = br.form.find_control('r_course_yr').get_items()
+
+for item in self.items:
+  label = ' '.join([label.text for label in item.get_labels()])
+  print 'Getting results for ', label
+
+  br.open(self.url)
+  br.select_form(predicate=select_form)
+  br.form['r_course_yr'] = [ item.name ]
+  br.submit()
+{% endhighlight %}
