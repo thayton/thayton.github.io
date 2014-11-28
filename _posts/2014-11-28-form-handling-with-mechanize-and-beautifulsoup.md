@@ -75,7 +75,7 @@ def select_iframe(iframe):
 br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
 {% endhighlight %}
 
-### control selection using a predicate function
+### Control selection using a predicate function
 
 Use predicate functions in conjunction with regular-expressions to
 select controls with a form that match a specific pattern:
@@ -130,7 +130,7 @@ br.select_form('searchForm')
 br.submit(name='input')
 {% endhighlight %}
 
-### handling 'ParseError: OPTION outside of SELECT' by prettyfing form
+### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
 
 {% highlight python %}
 # mechanize._form.ParseError: OPTION outside of SELECT
@@ -144,9 +144,9 @@ resp = mechanize.make_response(html, [("Content-Type", "text/html")],
 br.set_response(resp)
 {% endhighlight %}
 
-### setting htmlresponse with mechanize
+### Setting htmlresponse with mechanize
 
-### adding controls
+### Adding controls
 
 {% highlight python %}
 # raytheon.py
@@ -156,7 +156,7 @@ br.form.new_control('hidden', '__LASTFOCUS',     {'value': ''})
 br.form.fixup()
 {% endhighlight %}
 
-### removing controls to make form submissions work
+### Removing controls to make form submissions work
 
 {% highlight python %}
 # raytheon.py
@@ -165,11 +165,23 @@ for control in br.form.controls[:]:
     br.form.controls.remove(control)
 {% endhighlight %}
 
-### getting a list of items
+### Getting a list of items
+
+Sometimes we want to get all of the results for every item in a select-dropdown.
+To do so, get a list of all the items in the select control before hand and then
+submit them one a time to get the results for each item:
+
+{% highlight html %}
+<select name="more_cheeses">
+<option value="1">Swiss</option>
+<option value="2">Cheddar</option>
+<option value="3">Provolone</option>
+</select>       
+
 
 {% highlight python %}
 br.select_form(predicate=select_form)
-items = br.form.find_control('r_course_yr').get_items()
+items = br.form.find_control('more_cheeses').get_items()
 
 for item in self.items:
   label = ' '.join([label.text for label in item.get_labels()])
@@ -179,4 +191,14 @@ for item in self.items:
   br.select_form(predicate=select_form)
   br.form['r_course_yr'] = [ item.name ]
   br.submit()
+{% endhighlight %}
+
+### Adding items dynamically
+
+{% highlight python %}
+# chevron.py
+br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
+item = Item(br.form.find_control(name='searchAuxCountryID'),
+           {'contents': '3', 'value': '3', 'label': 3})
+br.form['searchAuxCountryID'] = ['3']
 {% endhighlight %}
