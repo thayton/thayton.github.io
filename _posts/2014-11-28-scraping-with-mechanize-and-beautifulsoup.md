@@ -15,14 +15,14 @@ br = mechanize.Browser()
 ### Setting the user-agent
 
 {% highlight python %}
-  br.addheaders = [('User-agent',
-                    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
+br.addheaders = [('User-agent',
+                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
 {% endhighlight %}
 
 ### Handling robots
 
 {% highlight python %}
-  br.set_handle_robots(False)
+br.set_handle_robots(False)
 {% endhighlight %}
 
 ### Form selection
@@ -30,16 +30,16 @@ br = mechanize.Browser()
 ### Form selection using a predicate function
 
 {% highlight python %}
-  # raytheon.py
-  def select_form(form):
-    return form.attrs.get('id', None) == 'form1'
+# raytheon.py
+def select_form(form):
+  return form.attrs.get('id', None) == 'form1'
 
-  br.select_form(predicate=select_form)
-  br.form.set_all_readonly(False)
+br.select_form(predicate=select_form)
+br.form.set_all_readonly(False)
 
-  # ergo.py
-  def select_form(form):
-    return form.attrs.get('action', None) == '/ergo/de/result'
+# ergo.py
+def select_form(form):
+  return form.attrs.get('action', None) == '/ergo/de/result'
 {% endhighlight %}
 
 ### Selecting links using a predicate function
