@@ -1,16 +1,15 @@
 ### Setup
 {% highlight bash %}
-
-  $ mkdir scraper && cd scraper
-  $ virtualenv venv
-  $ source venv/bin/activate
-  $ pip install mechanize
-  $ pip install beautifulsoup4
+$ mkdir scraper && cd scraper
+$ virtualenv venv
+$ source venv/bin/activate
+$ pip install mechanize
+$ pip install beautifulsoup4
 {% endhighlight %}
 
 {% highlight python %}
-  import mechanize
-  br = mechanize.Browser()
+import mechanize
+br = mechanize.Browser()
 {% endhighlight %}
 
 ### Setting the user-agent
