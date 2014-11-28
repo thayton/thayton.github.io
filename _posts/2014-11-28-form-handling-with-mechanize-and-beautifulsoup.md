@@ -1,5 +1,3 @@
-Form Handling
-
 ### Setup
 {% highlight bash %}
 $ mkdir scraper && cd scraper
@@ -29,7 +27,7 @@ br.set_handle_robots(False)
 
 ### Form selection
 
-Select a form using select_form() with the name of the form as the argument:
+Select a form using `select_form` with the name of the form as the argument:
 
 {% highlight python %}
 br.select_form('searchForm')
@@ -97,7 +95,7 @@ ctl.value = 'someval'
 ### Submitting a form
 
 Once of you have all of the values for a form set, submit it by
-calling submit():
+calling `submit`:
 
 {% highlight python %}
 br.submit()
@@ -105,7 +103,7 @@ br.submit()
 
 ### Form submission when multiple submit buttons present
 
-Sometimes you can't just call submit() because there's more than one submit button 
+Sometimes you can't just call `submit` because there's more than one submit button 
 and you want mechanize to choose a specific one. A common scenario is when one of 
 these buttons is for 'Search' and the other will be for 'Reset'ing the form:
 
@@ -118,7 +116,7 @@ these buttons is for 'Search' and the other will be for 'Reset'ing the form:
 </form>
 {% endhighlight %}
 
-In this case, pass the id of the control desired when calling submit():
+In this case, pass the id of the control desired when calling `submit`:
 
 {% highlight python %}
 br.select_form('searchForm')
