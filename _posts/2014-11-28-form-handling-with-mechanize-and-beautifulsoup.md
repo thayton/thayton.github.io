@@ -141,7 +141,7 @@ mechanize._form.ParseError: OPTION outside of SELECT
 {% endhighlight %}
 
 An easy way to fix the situation is by running the HTML for the page through
-BeautifulSoup beofre attempting to select the form with mechanize:
+BeautifulSoup before attempting to select the form with mechanize:
 
 {% highlight python %}
 br.open(url)
