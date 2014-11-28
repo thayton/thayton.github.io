@@ -64,17 +64,13 @@ br.select_form(predicate=select_form)
 br.submit()
 {% endhighlight %}
 
-### Selecting links using a predicate function
-
-You can select links in a similar fashion. The following code
-selects and follows an iframe using a predicate function to identify
-it based on its `tag` and `id`:
+### Filling in the form
 
 {% highlight python %}
-def select_iframe(iframe):
-  return dict(iframe.attrs).get('id', None) == 'main'
-
-br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
+br.select_form('searchForm')
+br.form.set_all_readonly(False)
+br.form['boption'] = 'CLoad'
+br.form['com.peopleclick.cp.formdata.hitsPerPage'] = [ '50' ]
 {% endhighlight %}
 
 ### Control selection using a predicate function
@@ -133,6 +129,44 @@ br.select_form('searchForm')
 br.submit(name='input')
 {% endhighlight %}
 
+### Getting a list of items
+
+Sometimes we want to get all of the results for every item in a select-dropdown.
+To do so, get a list of all the items in the select control before hand and then
+submit them one a time to get the results for each item:
+
+{% highlight html %}
+<select name="more_cheeses">
+<option value="1">Swiss</option>
+<option value="2">Cheddar</option>
+<option value="3">Provolone</option>
+</select>       
+{% endhighlight %}
+
+{% highlight python %}
+br.select_form(predicate=select_form)
+items = br.form.find_control('more_cheeses').get_items()
+
+for item in self.items:
+  label = ' '.join([label.text for label in item.get_labels()])
+  print 'Getting results for ', label
+
+  br.open(self.url)
+  br.select_form(predicate=select_form)
+  br.form['r_course_yr'] = [ item.name ]
+  br.submit()
+{% endhighlight %}
+
+### Adding items dynamically
+
+{% highlight python %}
+# chevron.py
+br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
+item = Item(br.form.find_control(name='searchAuxCountryID'),
+           {'contents': '3', 'value': '3', 'label': 3})
+br.form['searchAuxCountryID'] = ['3']
+{% endhighlight %}
+
 ### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
 
 If you attempt to select a form but it fails with the following error:
@@ -142,7 +176,7 @@ mechanize._form.ParseError: OPTION outside of SELECT
 {% endhighlight %}
 
 Fix the situation by running the HTML for the page through BeautifulSoup 
-before attempting to select the form with mechanize:
+before selecting the form with mechanize:
 
 {% highlight python %}
 import mechanize
@@ -199,8 +233,8 @@ function __doPostBack(eventTarget, eventArgument) {
 Later you will see this method called when a link is clicked. 
 
 {% highlight javascript %}
-<a href="javascript:__doPostBack('maincontent_0$jobsearchresults_0$next_page','')">
-  &nbsp; Next
+<a href="javascript:__doPostBack('$next_page','')">
+  Next
 </a>
 {% endhighlight %}
 
@@ -209,7 +243,8 @@ to get the form submission to work:
 
 {% highlight python %}
 
-br.form.new_control('hidden', '__EVENTTARGET',   {'value': 'maincontent_0$jobsearchresults_0$next_page'})
+br.form.new_control('hidden', '__EVENTTARGET',   
+  {'value': 'maincontent_0$jobsearchresults_0$next_page'})
 br.form.new_control('hidden', '__EVENTARGUMENT', {'value': ''})
 br.form.new_control('hidden', '__LASTFOCUS',     {'value': ''})
 br.form.fixup()
@@ -224,40 +259,16 @@ for control in br.form.controls[:]:
     br.form.controls.remove(control)
 {% endhighlight %}
 
-### Getting a list of items
+### Selecting links using a predicate function
 
-Sometimes we want to get all of the results for every item in a select-dropdown.
-To do so, get a list of all the items in the select control before hand and then
-submit them one a time to get the results for each item:
-
-{% highlight html %}
-<select name="more_cheeses">
-<option value="1">Swiss</option>
-<option value="2">Cheddar</option>
-<option value="3">Provolone</option>
-</select>       
-{% endhighlight %}
+You can select links in a similar fashion. The following code
+selects and follows an iframe using a predicate function to identify
+it based on its `tag` and `id`:
 
 {% highlight python %}
-br.select_form(predicate=select_form)
-items = br.form.find_control('more_cheeses').get_items()
+def select_iframe(iframe):
+  return dict(iframe.attrs).get('id', None) == 'main'
 
-for item in self.items:
-  label = ' '.join([label.text for label in item.get_labels()])
-  print 'Getting results for ', label
-
-  br.open(self.url)
-  br.select_form(predicate=select_form)
-  br.form['r_course_yr'] = [ item.name ]
-  br.submit()
+br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
 {% endhighlight %}
 
-### Adding items dynamically
-
-{% highlight python %}
-# chevron.py
-br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
-item = Item(br.form.find_control(name='searchAuxCountryID'),
-           {'contents': '3', 'value': '3', 'label': 3})
-br.form['searchAuxCountryID'] = ['3']
-{% endhighlight %}
