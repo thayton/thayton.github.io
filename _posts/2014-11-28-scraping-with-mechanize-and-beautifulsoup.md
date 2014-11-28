@@ -29,17 +29,29 @@ br.set_handle_robots(False)
 
 ### Form selection using a predicate function
 
+The following form does not have a name attribute.
+
+{% highlight html %}
+<form method="post" action="/en/search/" onsubmit="javascript:return WebForm_OnSubmit();" id="form1" autocomplete="off">
+{% endhighlight %}
+
+We can use a predicate function to select the form based off of one of its other attributes, such as its id:
+
 {% highlight python %}
-# raytheon.py
 def select_form(form):
   return form.attrs.get('id', None) == 'form1'
 
 br.select_form(predicate=select_form)
-br.form.set_all_readonly(False)
+br.submit()
+{% endhighlight %}
 
-# ergo.py
+We could have selected against the form's action instead:
+
 def select_form(form):
-  return form.attrs.get('action', None) == '/ergo/de/result'
+  return form.attrs.get('action', None) == '/en/search/'
+
+br.select_form(predicate=select_form)
+br.submit()
 {% endhighlight %}
 
 ### Selecting links using a predicate function
