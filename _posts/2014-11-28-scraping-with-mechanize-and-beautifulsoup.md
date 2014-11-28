@@ -32,7 +32,7 @@ br.set_handle_robots(False)
 The following form does not have a name attribute.
 
 {% highlight html %}
-<form method="post" action="/en/search/" onsubmit="javascript:return WebForm_OnSubmit();" id="form1" autocomplete="off">
+<form method="post" action="/en/search/" id="form1" autocomplete="off">
 {% endhighlight %}
 
 We can use a predicate function to select the form based off of one of its other attributes, such as its id:
