@@ -47,6 +47,7 @@ br.submit()
 
 We could have selected against the form's action instead:
 
+{% highlight python %}
 def select_form(form):
   return form.attrs.get('action', None) == '/en/search/'
 
