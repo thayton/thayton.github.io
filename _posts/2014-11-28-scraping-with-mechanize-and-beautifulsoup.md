@@ -1,5 +1,6 @@
 ### Setup
 {% highlight bash %}
+
   $ mkdir scraper && cd scraper
   $ virtualenv venv
   $ source venv/bin/activate
@@ -12,22 +13,22 @@
   br = mechanize.Browser()
 {% endhighlight %}
 
-### setting the user-agent
+### Setting the user-agent
 
 {% highlight python %}
   br.addheaders = [('User-agent',
                     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
 {% endhighlight %}
 
-### handling robots
+### Handling robots
 
 {% highlight python %}
   br.set_handle_robots(False)
 {% endhighlight %}
 
-### form selection
+### Form selection
 
-### form selection using a predicate function
+### Form selection using a predicate function
 
 {% highlight python %}
   # raytheon.py
