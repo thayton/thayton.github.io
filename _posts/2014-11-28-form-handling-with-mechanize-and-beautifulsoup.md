@@ -27,15 +27,22 @@ br.set_handle_robots(False)
 
 ### Form selection
 
-### Form selection using a predicate function
+Select a form using select_form() with the name of the form as the argument:
 
-The following form does not have a name attribute.
+{% highlight python %}
 
-{% highlight html %}
-<form method="post" action="/en/search/" id="form1" autocomplete="off">
 {% endhighlight %}
 
-We can use a predicate function to select the form based off of one of its other attributes, such as its id:
+### Form selection using a predicate function
+
+If the form does not have a name attribute, you can use a predicate function to select the form based off
+of one of its other attributes. The following form has no name attribute:
+
+{% highlight html %}
+<form method="post" action="/en/search/" id="form1">
+{% endhighlight %}
+
+So we'll select this form by filtering based on its id.
 
 {% highlight python %}
 def select_form(form):
@@ -57,6 +64,10 @@ br.submit()
 
 ### Selecting links using a predicate function
 
+You can select links in a similar fashion. The following code
+selects and follows an iframe using a predicate function to identify
+the iframe based on its id:
+
 {% highlight python %}
 def select_iframe(iframe):
   return dict(iframe.attrs).get('id', None) == 'main'
@@ -66,7 +77,12 @@ br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
 
 ### control selection using a predicate function
 
+Use predicate functions in conjunction with regular-expressions to
+select controls with a form that match a specific pattern:
+
 {% highlight python %}
+import re
+
 # raytheon.py
 def select_control(control):
   r = re.compile(r'ctl\d+_HiddenField')
@@ -76,16 +92,43 @@ ctl = br.form.find_control(predicate=select_control)
 ctl.value = 'someval'
 {% endhighlight %}
 
-### setting form action
+### Submitting a form
 
-### form submission when multiple submit buttons present
+Once of you have all of the values for a form set, submit it by
+calling submit():
 
 {% highlight python %}
-find . -name "*.py" | xargs grep -E "submit\([^)]"
+br.submit()
+{% endhighlight %}
 
-./peopleclick/siemens.py:        br.submit(id='searchButton')
-./peopleclick/siemens.py:        br.submit(name=i['name'])
-./peopleclick/sourcefire.py:     br.submit(name='input')
+### Form submission when multiple submit buttons present
+
+Sometimes you can't just call submit() because there's more than one submit button 
+and you want mechanize to choose a specific one. A common scenario is when one of 
+these buttons is for 'Search' and the other will be for 'Reset'ing the form:
+
+{% highlight %}
+<form name="searchForm" method="post" action="search.do">
+  ...
+  <input type="image" name="reset" src="Reset.gif" alt="Reset Form">
+  <input type="image" name="input" src="Search.gif" id="searchButton" alt="Search">
+  ...
+</form>
+{% endhighlight %}
+
+In this case, pass the id of the control desired when calling submit():
+
+{% highlight python %}
+br.select_form('searchForm')
+br.submit(id='searchButton')
+{% endhighlight %}
+
+or specify the name:
+
+{% highlight python %}
+br.select_form('searchForm')
+br.submit(name='input')
+{% highlight python %}
 {% endhighlight %}
 
 ### putting response into BeautifulSoup
