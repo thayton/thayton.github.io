@@ -80,7 +80,7 @@ br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
 ### Control selection using a predicate function
 
 Use predicate functions in conjunction with regular-expressions to
-select controls with a form that match a specific pattern:
+select controls within a form that match a specific pattern:
 
 {% highlight python %}
 import re
@@ -118,7 +118,7 @@ these buttons is for 'Search' and the other is for 'Reset'ing the form:
 </form>
 {% endhighlight %}
 
-In this case, pass the id of the control desired when calling `submit`:
+In this case, pass the id of the desired control when calling `submit`:
 
 {% highlight python %}
 br.select_form('searchForm')
@@ -134,16 +134,23 @@ br.submit(name='input')
 
 ### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
 
+Sometimes you will attempt to select a form, but it will fail with the following error:
+
 {% highlight python %}
-# mechanize._form.ParseError: OPTION outside of SELECT
-# Yale.py / brassring.py
-  
-s = soupify(br.response().read())
-# html = s.prettify()                                                                                                                                                   
+mechanize._form.ParseError: OPTION outside of SELECT
+{% endhighlight %}
+
+An easy way to fix the situation is by running the HTML for the page through
+BeautifulSoup beofre attempting to select the form with mechanize:
+
+{% highlight python %}
+br.open(url)
+s = BeautifulSoup(br.response().read())
 html = str(s)
 resp = mechanize.make_response(html, [("Content-Type", "text/html")],
                                br.geturl(), 200, "OK")
 br.set_response(resp)
+br.select_form('aspnetForm')
 {% endhighlight %}
 
 ### Setting htmlresponse with mechanize
