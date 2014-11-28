@@ -144,13 +144,19 @@ An easy way to fix the situation is by running the HTML for the page through
 BeautifulSoup before attempting to select the form with mechanize:
 
 {% highlight python %}
+import mechanize
+from bs4 import BeautifulSoup
+
+br = mechanize.Browser()
 br.open(url)
-s = BeautifulSoup(br.response().read())
-html = str(s)
+
+soup = BeautifulSoup(br.response().read())
+html = str(soup)
 resp = mechanize.make_response(html, [("Content-Type", "text/html")],
                                br.geturl(), 200, "OK")
 br.set_response(resp)
 br.select_form('aspnetForm')
+br.submit()
 {% endhighlight %}
 
 ### Setting htmlresponse with mechanize
