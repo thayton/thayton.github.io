@@ -8,7 +8,7 @@ relative_permalinks: true
 
 # Setup
 title:            'Todd Hayton'
-tagline:          'A Jekyll theme'
+tagline:          'Freelance Software Developer'
 description:      'Freelance Software Developer'
 url:              http://www.toddhayton.com
 baseurl:          /
