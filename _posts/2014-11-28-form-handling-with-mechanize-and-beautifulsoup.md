@@ -166,6 +166,8 @@ for item in self.items:
 
 ## When things go wrong
 
+Here are some common issues you may encounter when handling forms with mechanize.
+
 ### Handling 'ParseError: OPTION outside of SELECT'
 
 If you attempt to select a form but it fails with the following error:
@@ -234,7 +236,8 @@ Later you will see this method called when a link is clicked.
 {% endhighlight %}
 
 Since mechanize does not pick up these controls, you will need to create them yourself
-to get the form submission to work:
+to get the form submission to work. Use the `new_control` method to add these controls
+to the form and set their values at the same time:
 
 {% highlight python %}
 
@@ -245,6 +248,49 @@ br.form.fixup()
 {% endhighlight %}
 
 ### Adding items dynamically
+
+Sometimes a form's control values are set dynamically via javascript. So when you go
+to set the values for these controls with mechanize, there's no list of items to choose
+from. 
+
+First you must select the region. Once you select the region, javascript code will dynamically
+fill in the country options. Once you select a country option, javascript code will be triggered
+to dynamically fill out the state options and so on.
+
+{% highlight html %}
+<select id="searchAuxRegionID" name="searchAuxRegionID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxCountryID,'asAuxCountryID','CountryID','Description',document.frmSearch.searchAuxRegionID,'ParentID','');" width="0">
+  <option value="">-- Select --</option>
+  <option value="1">Africa</option>
+  <option value="3">Asia</option>
+  <option value="4">Australia</option>
+  <option value="5">Europe</option>
+  <option value="6">North America</option>
+</select>
+<select id="searchAuxCountryID" name="searchAuxCountryID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxStateID,'asAuxStateID','StateID','Description',document.frmSearch.searchAuxCountryID,'CountryID','');" width="0">
+  <option value="">-- Select --</option>
+</select>
+{% endhighlight %}
+
+The second select is empty! It doesn't get populated until you choose a value from the previous select list for
+the region (Africa, Asia, etc.)
+
+Here's what you do. Manually select the dropdown to see what values get populated. Then manually
+populate the control with an item for the value.
+
+In the example above, I select North America from the dropdown. This causes the searchAuxCountryID select
+dropdown to be populated with the following list of values.
+
+{% highlight html %}
+<select id="searchAuxCountryID" name="searchAuxCountryID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxStateID,'asAuxStateID','StateID','Description',document.frmSearch.searchAuxCountryID,'CountryID','');" width="0">
+  <option value="">-- Select --</option>
+  <option value="4">Canada</option>
+  <option value="3">USA</option>
+</select>
+{% endhighlight %}
+
+
+I want searchAuxCountryID to be set to "3" for USA. So, I create the item 
+manually with the desired value:
 
 {% highlight python %}
 # chevron.py
