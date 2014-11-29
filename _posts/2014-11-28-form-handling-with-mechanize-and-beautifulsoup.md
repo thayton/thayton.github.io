@@ -144,10 +144,10 @@ submit them one a time to get the results for each item:
     <option value="acct">Accounting</option>
     <option value="comp">Computer Science</option>
     <option value="math">Mathematcis</option>
-  </select
+  </select>       
   ...
 </form>
-</select>       
+
 {% endhighlight %}
 
 {% highlight python %}
@@ -231,7 +231,7 @@ function __doPostBack(eventTarget, eventArgument) {
 
 Later you will see this method called when a link is clicked. 
 
-{% highlight javascript %}
+{% highlight html %}
 <a href="javascript:__doPostBack('$next_page','')">Next</a>
 {% endhighlight %}
 
