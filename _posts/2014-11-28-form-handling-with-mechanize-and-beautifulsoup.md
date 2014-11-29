@@ -1,5 +1,5 @@
 * Opening a page and selecting a form
-* Filling out the form
+* Filling in the form
 * Submitting the form
 * When things go wrong
 
@@ -12,22 +12,16 @@ $ pip install mechanize
 $ pip install beautifulsoup4
 {% endhighlight %}
 
+## Opening a page and selecting a form
+
 {% highlight python %}
 import mechanize
 br = mechanize.Browser()
-{% endhighlight %}
-
-### Setting the user-agent
-
-{% highlight python %}
 br.addheaders = [('User-agent',
                   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
-{% endhighlight %}
-
-### Handling robots
-
-{% highlight python %}
 br.set_handle_robots(False)
+br.open(url)
+print br.response().read()
 {% endhighlight %}
 
 ### Form selection
@@ -69,7 +63,8 @@ br.select_form(predicate=select_form)
 br.submit()
 {% endhighlight %}
 
-### Filling in the form
+## Filling in the form
+### Setting control values by name
 
 {% highlight python %}
 br.select_form('searchForm')
@@ -94,6 +89,8 @@ def select_control(control):
 ctl = br.form.find_control(predicate=select_control)
 ctl.value = 'someval'
 {% endhighlight %}
+
+## Submitting the form
 
 ### Submitting a form
 
@@ -141,16 +138,16 @@ To do so, get a list of all the items in the select control before hand and then
 submit them one a time to get the results for each item:
 
 {% highlight html %}
-<select name="more_cheeses">
-<option value="1">Swiss</option>
-<option value="2">Cheddar</option>
-<option value="3">Provolone</option>
+<select name="course_schedule">
+<option value="acct">Accounting</option>
+<option value="comp">Computer Science</option>
+<option value="math">Mathematcis</option>
 </select>       
 {% endhighlight %}
 
 {% highlight python %}
 br.select_form(predicate=select_form)
-items = br.form.find_control('more_cheeses').get_items()
+items = br.form.find_control('course_schedule').get_items()
 
 for item in self.items:
   label = ' '.join([label.text for label in item.get_labels()])
@@ -158,9 +155,11 @@ for item in self.items:
 
   br.open(self.url)
   br.select_form(predicate=select_form)
-  br.form['r_course_yr'] = [ item.name ]
+  br.form['course'] = [ item.name ]
   br.submit()
 {% endhighlight %}
+
+## When things go wrong
 
 ### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
 
