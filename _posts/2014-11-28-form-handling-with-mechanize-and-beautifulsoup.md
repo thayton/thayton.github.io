@@ -14,6 +14,7 @@ $ pip install beautifulsoup4
 
 ## Opening a page and selecting a form
 
+### Opening a page
 {% highlight python %}
 import mechanize
 br = mechanize.Browser()
@@ -105,7 +106,7 @@ br.submit()
 
 Sometimes you can't just call `submit` with no arguments because there's more than 
 one submit button and you want mechanize to choose a specific one. A common scenario 
-is when one of these buttons is for 'Search' and the other is for 'Reset'ing or 
+is when one of the buttons is for 'Search' and the other is for 'Reset'ing or 
 'Clear'ing the form.
 
 {% highlight html %}
@@ -138,24 +139,28 @@ To do so, get a list of all the items in the select control before hand and then
 submit them one a time to get the results for each item:
 
 {% highlight html %}
-<select name="course_schedule">
-<option value="acct">Accounting</option>
-<option value="comp">Computer Science</option>
-<option value="math">Mathematcis</option>
+<form name="course_schedule" action="." method="post">
+  <select name="major">
+    <option value="acct">Accounting</option>
+    <option value="comp">Computer Science</option>
+    <option value="math">Mathematcis</option>
+  </select
+  ...
+</form>
 </select>       
 {% endhighlight %}
 
 {% highlight python %}
-br.select_form(predicate=select_form)
-items = br.form.find_control('course_schedule').get_items()
+br.select_form('course_schedule')
+items = br.form.find_control('major').get_items()
 
 for item in self.items:
   label = ' '.join([label.text for label in item.get_labels()])
   print 'Getting results for ', label
 
   br.open(self.url)
-  br.select_form(predicate=select_form)
-  br.form['course'] = [ item.name ]
+  br.select_form('course_schedule')
+  br.form['major'] = [ item.name ]
   br.submit()
 {% endhighlight %}
 
@@ -227,12 +232,10 @@ function __doPostBack(eventTarget, eventArgument) {
 Later you will see this method called when a link is clicked. 
 
 {% highlight javascript %}
-<a href="javascript:__doPostBack('$next_page','')">
-  Next
-</a>
+<a href="javascript:__doPostBack('$next_page','')">Next</a>
 {% endhighlight %}
 
-Since mechanize does not pick up these controls, yYou will need to create them yourself
+Since mechanize does not pick up these controls, you will need to create them yourself
 to get the form submission to work:
 
 {% highlight python %}
