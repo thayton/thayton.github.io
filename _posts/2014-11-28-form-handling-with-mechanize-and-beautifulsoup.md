@@ -1,3 +1,8 @@
+* Opening a page and selecting a form
+* Filling out the form
+* Submitting the form
+* When things go wrong
+
 ### Setup
 {% highlight bash %}
 $ mkdir scraper && cd scraper
@@ -157,16 +162,6 @@ for item in self.items:
   br.submit()
 {% endhighlight %}
 
-### Adding items dynamically
-
-{% highlight python %}
-# chevron.py
-br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
-item = Item(br.form.find_control(name='searchAuxCountryID'),
-           {'contents': '3', 'value': '3', 'label': 3})
-br.form['searchAuxCountryID'] = ['3']
-{% endhighlight %}
-
 ### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
 
 If you attempt to select a form but it fails with the following error:
@@ -250,6 +245,17 @@ br.form.new_control('hidden', '__LASTFOCUS',     {'value': ''})
 br.form.fixup()
 {% endhighlight %}
 
+### Adding items dynamically
+
+{% highlight python %}
+# chevron.py
+br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
+item = Item(br.form.find_control(name='searchAuxCountryID'),
+           {'contents': '3', 'value': '3', 'label': 3})
+br.form['searchAuxCountryID'] = ['3']
+{% endhighlight %}
+
+
 ### Removing controls to make form submissions work
 
 {% highlight python %}
@@ -257,18 +263,5 @@ br.form.fixup()
 for control in br.form.controls[:]:
   if control.type in ['submit', 'image', 'checkbox']:
     br.form.controls.remove(control)
-{% endhighlight %}
-
-### Selecting links using a predicate function
-
-You can select links in a similar fashion. The following code
-selects and follows an iframe using a predicate function to identify
-it based on its `tag` and `id`:
-
-{% highlight python %}
-def select_iframe(iframe):
-  return dict(iframe.attrs).get('id', None) == 'main'
-
-br.follow_link(br.find_link(tag='iframe', predicate=select_iframe))
 {% endhighlight %}
 
