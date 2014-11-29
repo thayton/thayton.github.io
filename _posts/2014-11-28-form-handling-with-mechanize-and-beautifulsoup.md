@@ -143,7 +143,7 @@ submit them one a time to get the results for each item:
   <select name="major">
     <option value="acct">Accounting</option>
     <option value="comp">Computer Science</option>
-    <option value="math">Mathematcis</option>
+    <option value="math">Mathematics</option>
   </select>       
   ...
 </form>
@@ -166,7 +166,7 @@ for item in self.items:
 
 ## When things go wrong
 
-### Handling 'ParseError: OPTION outside of SELECT' by prettyfing form
+### Handling 'ParseError: OPTION outside of SELECT'
 
 If you attempt to select a form but it fails with the following error:
 
@@ -192,8 +192,6 @@ br.set_response(resp)
 br.select_form('aspnetForm')
 br.submit()
 {% endhighlight %}
-
-### Setting htmlresponse with mechanize
 
 ### Adding controls
 
@@ -240,8 +238,7 @@ to get the form submission to work:
 
 {% highlight python %}
 
-br.form.new_control('hidden', '__EVENTTARGET',   
-  {'value': 'maincontent_0$jobsearchresults_0$next_page'})
+br.form.new_control('hidden', '__EVENTTARGET',   {'value': '$next_page'})
 br.form.new_control('hidden', '__EVENTARGUMENT', {'value': ''})
 br.form.new_control('hidden', '__LASTFOCUS',     {'value': ''})
 br.form.fixup()
@@ -251,7 +248,8 @@ br.form.fixup()
 
 {% highlight python %}
 # chevron.py
-br.form.set_value_by_label(['North America'], name='searchAuxRegionID')
+br.form.set_value_by_label(['North America'], 
+                           name='searchAuxRegionID')
 item = Item(br.form.find_control(name='searchAuxCountryID'),
            {'contents': '3', 'value': '3', 'label': 3})
 br.form['searchAuxCountryID'] = ['3']
