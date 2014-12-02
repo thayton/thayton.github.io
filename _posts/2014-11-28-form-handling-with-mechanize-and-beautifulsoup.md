@@ -70,18 +70,35 @@ br.submit()
 
 ### Setting control values by name
 
+Fill in the form providing the name and value of form controls
+using the following format:
+
 {% highlight python %}
-br.select_form('searchForm')
+form[name] = value
+{% endhighlight %}
+
+For example,
+
+{% highlight python %}
 br.form['boption'] = 'CLoad'
 br.form['hitsPerPage'] = [ '50' ]
 {% endhighlight %}
 
-equivalently
+This is equivalient to:
 
 {% highlight python %}
-self.br.select_form('searchFrom')
 self.br.form.set_value('CLoad', 'boption')
 self.br.form.set_value(['50'], 'hitsPerPage')
+{% endhighlight %}
+
+Which is the same as:
+
+{% highlight python %}
+ctl =  self.br.form.find_control('boption')
+ctl.value = 'CLoad'
+
+ctl =  self.br.form.find_control('hitsPerPage')
+ctl.value = ['50']
 {% endhighlight %}
 
 If you get a readonly error `ValueError: control '<em>control_name</em>' is readonly` 
