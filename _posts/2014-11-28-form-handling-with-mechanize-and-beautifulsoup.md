@@ -258,7 +258,9 @@ fill in the country options. Once you select a country option, javascript code w
 to dynamically fill out the state options and so on.
 
 {% highlight html %}
-<select id="searchAuxRegionID" name="searchAuxRegionID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxCountryID,'asAuxCountryID','CountryID','Description',document.frmSearch.searchAuxRegionID,'ParentID','');" width="0">
+<select id="searchAuxRegionID" name="searchAuxRegionID" 
+  onchange="PopulateCombo(document.frmSearch.searchAuxCountryID);">
+
   <option value="">-- Select --</option>
   <option value="1">Africa</option>
   <option value="3">Asia</option>
@@ -266,7 +268,9 @@ to dynamically fill out the state options and so on.
   <option value="5">Europe</option>
   <option value="6">North America</option>
 </select>
-<select id="searchAuxCountryID" name="searchAuxCountryID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxStateID,'asAuxStateID','StateID','Description',document.frmSearch.searchAuxCountryID,'CountryID','');" width="0">
+<select id="searchAuxCountryID" name="searchAuxCountryID" 
+  onchange="PopulateCombo(document.frmSearch.searchAuxStateID);">
+
   <option value="">-- Select --</option>
 </select>
 {% endhighlight %}
