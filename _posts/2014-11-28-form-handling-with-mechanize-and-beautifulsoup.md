@@ -1,7 +1,9 @@
-* Opening a page and selecting a form
+In this post, I'll go over the following:
+
+* Opening a page with mechanize and selecting a form
 * Filling in the form
 * Submitting the form
-* When things go wrong
+* What to do when things go wrong
 
 ### Setup
 {% highlight bash %}
@@ -65,13 +67,34 @@ br.submit()
 {% endhighlight %}
 
 ## Filling in the form
+
 ### Setting control values by name
 
 {% highlight python %}
 br.select_form('searchForm')
-br.form.set_all_readonly(False)
 br.form['boption'] = 'CLoad'
-br.form['com.peopleclick.cp.formdata.hitsPerPage'] = [ '50' ]
+br.form['hitsPerPage'] = [ '50' ]
+{% endhighlight %}
+
+equivalently
+
+{% highlight python %}
+self.br.select_form('searchFrom')
+self.br.form.set_value('CLoad', 'boption')
+self.br.form.set_value(['50'], 'hitsPerPage')
+{% endhighlight %}
+
+If you get a readonly error `ValueError: control '<em>control_name</em>' is readonly` 
+when filling out the from, change the control's readonly attribute to false:
+
+{% highlight python %}
+br.form.find_control('control_name').readonly = False
+{% endhighlight %}
+
+or call `set_all_readonly(False)` on the form to make all of the controls writable.
+
+{% highlight python %}
+br.form.set_all_readonly(False)
 {% endhighlight %}
 
 ### Control selection using a predicate function
@@ -95,7 +118,7 @@ ctl.value = 'someval'
 
 ### Submitting a form
 
-Once of you have all of the values for a form set, submit it by
+Once you've filled out all of the from values, submit the form by
 calling `submit`:
 
 {% highlight python %}
@@ -176,8 +199,8 @@ If you attempt to select a form but it fails with the following error:
 mechanize._form.ParseError: OPTION outside of SELECT
 {% endhighlight %}
 
-Fix the situation by running the HTML for the page through BeautifulSoup 
-before selecting the form with mechanize:
+Fix the situation by running the page through BeautifulSoup before selecting the 
+form with mechanize:
 
 {% highlight python %}
 import mechanize
@@ -197,8 +220,8 @@ br.submit()
 
 ### Adding controls
 
-Sometimes mechanize will not pick up certain hidden form controls. You will often encounter this with ASP.NET
-pages where you will see the following controls within the form:
+Sometimes mechanize will not pick up certain hidden form controls. I've encountered this with ASP.NET
+pages where mechanize won't pick up the following controls (__EVENTTARGET, __EVENTARGUMENT, __LASTFOCUS):
  
 {% highlight html %}
 <form name="ctl00" method="post" action="search" id="ctl00"> 
@@ -211,8 +234,8 @@ pages where you will see the following controls within the form:
 </form>
 {% endhighlight %}
 
-There will also be a built-in javascript method `__doPostBack(eventTarget, eventArgument)` that will fill
-in these values when the form is submitted.
+If you dig around you'll see a built-in javascript method `__doPostBack(eventTarget, eventArgument)` 
+that fills in these values when the form is submitted.
 
 {% highlight javascript %}
 var theForm = document.forms['form1'];
@@ -229,18 +252,11 @@ function __doPostBack(eventTarget, eventArgument) {
 }
 {% endhighlight %}
 
-Later you will see this method called when a link is clicked. 
-
-{% highlight html %}
-<a href="javascript:__doPostBack('$next_page','')">Next</a>
-{% endhighlight %}
-
 Since mechanize does not pick up these controls, you will need to create them yourself
 to get the form submission to work. Use the `new_control` method to add these controls
 to the form and set their values at the same time:
 
 {% highlight python %}
-
 br.form.new_control('hidden', '__EVENTTARGET',   {'value': '$next_page'})
 br.form.new_control('hidden', '__EVENTARGUMENT', {'value': ''})
 br.form.new_control('hidden', '__LASTFOCUS',     {'value': ''})
