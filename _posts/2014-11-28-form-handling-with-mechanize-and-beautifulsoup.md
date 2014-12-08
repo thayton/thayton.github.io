@@ -51,7 +51,7 @@ For instance, the following form has no `name` attribute:
 <form method="post" action="/en/search/" id="form1">
 {% endhighlight %}
 
-We can select this form by filtering based on its `id`.
+We can select this form by filtering on its `id`.
 
 {% highlight python %}
 def select_form(form):
@@ -75,8 +75,8 @@ br.submit()
 
 ### Setting control values by name
 
-Fill in the form providing the name and value of form controls
-using the following format:
+After you have selected a form, fill it in by providing the name of the form control you 
+want to set along with the associated value using the following format:
 
 {% highlight python %}
 form[name] = value
@@ -121,13 +121,12 @@ br.form.set_all_readonly(False)
 
 ### Control selection using a predicate function
 
-Use predicate functions in conjunction with regular-expressions to
+You can also use predicate functions in conjunction with regular-expressions to
 select controls within a form that match a specific pattern:
 
 {% highlight python %}
 import re
 
-# raytheon.py
 def select_control(control):
   r = re.compile(r'ctl\d+_HiddenField')
   return bool(re.match(r, control.name))
@@ -140,7 +139,7 @@ ctl.value = 'someval'
 
 ### Submitting a form
 
-Once you've filled out all of the from values, submit the form by
+Once you've filled out all of the form values, submit the form by
 calling `submit`:
 
 {% highlight python %}
@@ -181,7 +180,9 @@ br.submit(name='input')
 
 Sometimes we want to get all of the results for every item in a select-dropdown.
 To do so, get a list of all the items in the select control before hand and then
-submit them one a time to get the results for each item:
+submit them one a time to get the results for each item. For instance, imagine
+we have the following form and want to get the results for each major (acct,
+comp, math) available for selection:
 
 {% highlight html %}
 <form name="course_schedule" action="." method="post">
@@ -192,8 +193,9 @@ submit them one a time to get the results for each item:
   </select>       
   ...
 </form>
-
 {% endhighlight %}
+
+Then we can use something like the following:
 
 {% highlight python %}
 br.select_form('course_schedule')
@@ -203,10 +205,13 @@ for item in self.items:
   label = ' '.join([label.text for label in item.get_labels()])
   print 'Getting results for ', label
 
-  br.open(self.url)
+  br.open(url)
   br.select_form('course_schedule')
   br.form['major'] = [ item.name ]
   br.submit()
+
+  # the results
+  print br.response().read()
 {% endhighlight %}
 
 ## When things go wrong
@@ -271,11 +276,10 @@ br.form.fixup()
 
 Sometimes a form's control values are set dynamically via javascript. So when you go
 to set the values for these controls with mechanize, there's no list of items to choose
-from. 
+from because mechanize can't run javascript that would have created them.
 
-First you must select the region. Once you select the region, javascript code will dynamically
-fill in the country options. Once you select a country option, javascript code will be triggered
-to dynamically fill out the state options and so on.
+I've encountered this with forms that dynamically generate a select drop down for region,
+country, state, city, etc. Here's an example of that scenario:
 
 {% highlight html %}
 <select id="searchAuxRegionID" name="searchAuxRegionID" 
@@ -295,41 +299,59 @@ to dynamically fill out the state options and so on.
 </select>
 {% endhighlight %}
 
-The second select is empty! It doesn't get populated until you choose a value from the previous select list for
-the region (Africa, Asia, etc.)
+Note that the second select list is empty.
 
-Here's what you do. Manually select the dropdown to see what values get populated. Then manually
-populate the control with an item for the value.
+In the above form, you must first you must select the region before the country select dropdown gets populated. 
+Once you select the region, it will trigger javascript code in the onchange attribute to dynamically gnerate a 
+list of country items. 
 
-In the example above, I select North America from the dropdown. This causes the searchAuxCountryID select
-dropdown to be populated with the following list of values.
+Going along with the example above, I select North America from the dropdown. This causes the searchAuxCountryID select
+dropdown to be populated with the following list of values. 
 
 {% highlight html %}
-<select id="searchAuxCountryID" name="searchAuxCountryID" size="1" onchange="PopulateCombo(document.frmSearch.searchAuxStateID,'asAuxStateID','StateID','Description',document.frmSearch.searchAuxCountryID,'CountryID','');" width="0">
+<select id="searchAuxCountryID" name="searchAuxCountryID" onchange="PopulateCombo(document.frmSearch.searchAuxStateID);">
   <option value="">-- Select --</option>
   <option value="4">Canada</option>
   <option value="3">USA</option>
 </select>
 {% endhighlight %}
 
+Now in the browser I can select which country I want to submit in the form.
 
-I want searchAuxCountryID to be set to "3" for USA. So, I create the item 
-manually with the desired value:
+So how do we do all of this in mechanize? Can you just try setting the value of the `searchAuxCountryID`
+to `3` or `4`? Nope, it will fail with the following error:
 
 {% highlight python %}
-# chevron.py
-br.form.set_value_by_label(['North America'], 
-                           name='searchAuxRegionID')
+(Pdb) print self.br.form
+print self.br.form
+<frmSearch POST https://www.chevron.apply2jobs.com/ProfExt/index.cfm?fuseaction=mExternal.searchJobs application/x-www-form-urlencoded
+  <SelectControl(searchAuxRegionID=[, 1, 3, 4, 5, *6])>
+  <SelectControl(searchAuxCountryID=[*])>
+  <SelectControl(searchAuxStateID=[*])>
+  <SelectControl(searchAuxCityID=[*])>>
+(Pdb) self.br.form['searchAuxCountryID'] = ['3']
+self.br.form['searchAuxCountryID'] = ['3']
+*** ItemNotFoundError: insufficient items with name '3'
+{% endhighlight %}
+
+What you must do is create an `Item` for the value manually and attach it to the 
+control you want it to be part of. In this case we want it to be an item with a value of `3`
+within the `searchAuxCountryID` control:
+
+{% highlight python %}
 item = Item(br.form.find_control(name='searchAuxCountryID'),
            {'contents': '3', 'value': '3', 'label': 3})
 br.form['searchAuxCountryID'] = ['3']
 {% endhighlight %}
 
-
 ### Removing controls to make form submissions work
 
+All of the previous examples have assumed that we need to add controls to make a form submission work. But sometimes
+you will encounter cases where you need to remove controls in order to get the form submission to work. You can remove
+controls by calling `br.form.controls.remove` and providing an instance of the control you wish to delete. Here's an
+example where we remove all of submit, image, or checkbox controls from the form:
+
 {% highlight python %}
-# raytheon.py
 for control in br.form.controls[:]:
   if control.type in ['submit', 'image', 'checkbox']:
     br.form.controls.remove(control)
