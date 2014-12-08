@@ -6,6 +6,9 @@ In this post, I'll go over the following:
 * What to do when things go wrong
 
 ### Setup
+
+Install Mechanize and BeautifulSoup within a virtual environment. 
+
 {% highlight bash %}
 $ mkdir scraper && cd scraper
 $ virtualenv venv
@@ -17,13 +20,15 @@ $ pip install beautifulsoup4
 ## Opening a page and selecting a form
 
 ### Opening a page
+
 {% highlight python %}
+#!/usr/bin/env python
+
 import mechanize
+
 br = mechanize.Browser()
-br.addheaders = [('User-agent',
-                  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
-br.set_handle_robots(False)
-br.open(url)
+br.open('http://thayton.github.io')
+
 print br.response().read()
 {% endhighlight %}
 
@@ -84,14 +89,14 @@ br.form['boption'] = 'CLoad'
 br.form['hitsPerPage'] = [ '50' ]
 {% endhighlight %}
 
-This is equivalient to:
+Which is equivalient to:
 
 {% highlight python %}
 self.br.form.set_value('CLoad', 'boption')
 self.br.form.set_value(['50'], 'hitsPerPage')
 {% endhighlight %}
 
-Which is the same as:
+Another way to write it:
 
 {% highlight python %}
 ctl =  self.br.form.find_control('boption')
@@ -249,24 +254,6 @@ pages where mechanize won't pick up the following controls (__EVENTTARGET, __EVE
     <input type="hidden" name="__VIEWSTATE" id="__VIEWSTATE" value="/wEPD....">
   </div>
 </form>
-{% endhighlight %}
-
-If you dig around you'll see a built-in javascript method `__doPostBack(eventTarget, eventArgument)` 
-that fills in these values when the form is submitted.
-
-{% highlight javascript %}
-var theForm = document.forms['form1'];
-if (!theForm) {
-    theForm = document.form1;
-}
-
-function __doPostBack(eventTarget, eventArgument) {
-    if (!theForm.onsubmit || (theForm.onsubmit() != false)) {
-        theForm.__EVENTTARGET.value = eventTarget;
-        theForm.__EVENTARGUMENT.value = eventArgument;
-        theForm.submit();
-    }
-}
 {% endhighlight %}
 
 Since mechanize does not pick up these controls, you will need to create them yourself
