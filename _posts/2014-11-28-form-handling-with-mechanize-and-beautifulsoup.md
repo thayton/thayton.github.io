@@ -27,6 +27,9 @@ $ pip install beautifulsoup4
 
 ## Opening a page and selecting a form
 
+To open a page with mechanize, instantiate a `Browser` and provide the url of the page
+to the `open` method:
+
 ### Opening a page
 
 {% highlight python %}
@@ -37,7 +40,11 @@ import mechanize
 br = mechanize.Browser()
 br.open('http://thayton.github.io')
 
-print br.response().read()
+response = br.response()
+
+print response.geturl() # URL of the page we just opened
+print response.info()   # headers
+print response.read()   # body
 {% endhighlight %}
 
 ### Form selection
@@ -188,9 +195,10 @@ br.submit(name='input')
 
 Sometimes we want to get all of the results for every item in a select-dropdown.
 To do so, get a list of all the items in the select control before hand and then
-submit them one a time to get the results for each item. For instance, imagine
-we have the following form and want to get the results for each major (acct,
-comp, math) available for selection:
+submit them one a time to get the results for each item. 
+
+For instance, imagine we have the following form and want to get the results for 
+each major (acct, comp, math) available for selection:
 
 {% highlight html %}
 <form name="course_schedule" action="." method="post">
@@ -282,7 +290,7 @@ br.form.fixup()
 
 ### Adding items dynamically
 
-Sometimes a form's control values are set dynamically via javascript. So when you go
+Sometimes a control's values are set dynamically via javascript. So when you go
 to set the values for these controls with mechanize, there's no list of items to choose
 from because mechanize can't run javascript that would have created them.
 
@@ -307,14 +315,14 @@ country, state, city, etc. Here's an example of that scenario:
 </select>
 {% endhighlight %}
 
-Note that the second select list is empty.
+Note in the above form that the second select list for country is empty. That's because it doesn't get populated until 
+you've chosen a value for region from the first select list.
 
-In the above form, you must first you must select the region before the country select dropdown gets populated. 
 Once you select the region, it will trigger javascript code in the onchange attribute to dynamically gnerate a 
 list of country items. 
 
-Going along with the example above, I select North America from the dropdown. This causes the searchAuxCountryID select
-dropdown to be populated with the following list of values. 
+In a real browser we can see this is in action. Say I select North America from the dropdown. This causes the 
+searchAuxCountryID select dropdown to be populated with the following list of values. 
 
 {% highlight html %}
 <select id="searchAuxCountryID" name="searchAuxCountryID" onchange="PopulateCombo(document.frmSearch.searchAuxStateID);">
@@ -326,19 +334,21 @@ dropdown to be populated with the following list of values.
 
 Now in the browser I can select which country I want to submit in the form.
 
-So how do we do all of this in mechanize? Can you just try setting the value of the `searchAuxCountryID`
-to `3` or `4`? Nope, it will fail with the following error:
+But how do we do all of this in mechanize? Can you just try setting the value of the `searchAuxCountryID`
+to `3` or `4`? Nope, it will fail with the error `*** ItemNotFoundError: insufficient items with name '<your-value>'`:
 
 {% highlight python %}
 (Pdb) print self.br.form
 print self.br.form
-<frmSearch POST https://www.chevron.apply2jobs.com/ProfExt/index.cfm?fuseaction=mExternal.searchJobs application/x-www-form-urlencoded
+<frmSearch POST https://www.exampmle.com/search application/x-www-form-urlencoded
   <SelectControl(searchAuxRegionID=[, 1, 3, 4, 5, *6])>
   <SelectControl(searchAuxCountryID=[*])>
   <SelectControl(searchAuxStateID=[*])>
   <SelectControl(searchAuxCityID=[*])>>
+
 (Pdb) self.br.form['searchAuxCountryID'] = ['3']
 self.br.form['searchAuxCountryID'] = ['3']
+
 *** ItemNotFoundError: insufficient items with name '3'
 {% endhighlight %}
 
@@ -356,8 +366,9 @@ br.form['searchAuxCountryID'] = ['3']
 
 All of the previous examples have assumed that we need to add controls to make a form submission work. But sometimes
 you will encounter cases where you need to remove controls in order to get the form submission to work. You can remove
-controls by calling `br.form.controls.remove` and providing an instance of the control you wish to delete. Here's an
-example where we remove all of submit, image, or checkbox controls from the form:
+controls by calling `br.form.controls.remove` and providing an instance of the control you wish to delete. 
+
+Here's an example where we remove all of submit, image, or checkbox controls from the form:
 
 {% highlight python %}
 for control in br.form.controls[:]:
