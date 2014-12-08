@@ -1,4 +1,11 @@
-In this post, I'll go over the following:
+Python <a target="_blank" href="http://wwwsearch.sourceforge.net/mechanize/">Mechanize</a> 
+is a module that provides an API for browsing web pages and manipulating HTML forms. 
+<a target="_blank" href="http://www.crummy.com/software/BeautifulSoup/">BeautifulSoup</a> 
+is a library for parsing and extracting data from HTML. Together they form a powerful 
+combination of tools for web scraping.
+
+In this post, I'll highlight some of the features Mechanize provides for
+manipulating HTML forms. Specifically, I'll go over the following:
 
 * Opening a page with mechanize and selecting a form
 * Filling in the form
@@ -7,7 +14,8 @@ In this post, I'll go over the following:
 
 ### Setup
 
-Install Mechanize and BeautifulSoup within a virtual environment. 
+In order to install Mechanize and BeautifulSoup within a virtual environment, execute
+the following commands: 
 
 {% highlight bash %}
 $ mkdir scraper && cd scraper
@@ -76,7 +84,7 @@ br.submit()
 ### Setting control values by name
 
 After you have selected a form, fill it in by providing the name of the form control you 
-want to set along with the associated value using the following format:
+want to set along with its associated value using the following format:
 
 {% highlight python %}
 form[name] = value
@@ -89,14 +97,14 @@ br.form['boption'] = 'CLoad'
 br.form['hitsPerPage'] = [ '50' ]
 {% endhighlight %}
 
-Which is equivalient to:
+That's equivalient to:
 
 {% highlight python %}
 self.br.form.set_value('CLoad', 'boption')
 self.br.form.set_value(['50'], 'hitsPerPage')
 {% endhighlight %}
 
-Another way to write it:
+And here's yet another way to write the above:
 
 {% highlight python %}
 ctl =  self.br.form.find_control('boption')
@@ -107,7 +115,7 @@ ctl.value = ['50']
 {% endhighlight %}
 
 If you get a readonly error `ValueError: control '<em>control_name</em>' is readonly` 
-when filling out the from, change the control's readonly attribute to false:
+,when filling out the from, change the control's readonly attribute to `False`:
 
 {% highlight python %}
 br.form.find_control('control_name').readonly = False
