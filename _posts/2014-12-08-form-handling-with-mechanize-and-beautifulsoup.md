@@ -4,8 +4,8 @@ title: Form Handling With Mechanize And Beautifulsoup
 ---
 
 Python <a target="_blank" href="http://wwwsearch.sourceforge.net/mechanize/">Mechanize</a> 
-is a module that provides an API for browsing web pages and manipulating HTML forms. 
-<a target="_blank" href="http://www.crummy.com/software/BeautifulSoup/">BeautifulSoup</a> 
+is a module that provides an API for programmatically browsing web pages and manipulating 
+HTML forms. <a target="_blank" href="http://www.crummy.com/software/BeautifulSoup/">BeautifulSoup</a> 
 is a library for parsing and extracting data from HTML. Together they form a powerful 
 combination of tools for web scraping.
 
