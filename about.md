@@ -3,28 +3,15 @@ layout: page
 title: About
 ---
 
-<p class="message">
-  Hey there! This page is included as an example. Feel free to customize it for your own use upon downloading. Carry on!
-</p>
+My name is Todd Hayton and I'm a freelance software developer living in the DC metro area. I've been programming professionally
+since 2001, and freelancing since 2010. My professional background is predominantly in C and Python:
 
-In the novel, *The Strange Case of Dr. Jeykll and Mr. Hyde*, Mr. Poole is Dr. Jekyll's virtuous and loyal butler. Similarly, Poole is an upstanding and effective butler that helps you build Jekyll themes. It's made by [@mdo](https://twitter.com/mdo).
+* C (14 years) - Systems development, BSD sockets, Embedded development
+* Python (4 years) - Django web development, web/data-scraping
 
-There are currently two themes built on Poole:
+Since 2012, I've run [Neekanee.com](http://www.neekanee.com), an international job search engine that I built from scratch 
+(using Python/Django) that scrapes jobs directly from company web sites. At present, it covers from over 90k jobs from over
+100 countries. 
 
-* [Hyde](http://hyde.getpoole.com)
-* [Lanyon](http://lanyon.getpoole.com)
+If you'd like more information about my professional background, you can view my [LinkedIn profile](https://www.linkedin.com/in/toddhayton).
 
-Learn more and contribute on [GitHub](https://github.com/poole).
-
-## Setup
-
-Some fun facts about the setup of this project include:
-
-* Built for [Jekyll](http://jekyllrb.com)
-* Developed on GitHub and hosted for free on [GitHub Pages](https://pages.github.com)
-* Coded with [Sublime Text 2](http://sublimetext.com), an amazing code editor
-* Designed and developed while listening to music like [Blood Bros Trilogy](https://soundcloud.com/maddecent/sets/blood-bros-series)
-
-Have questions or suggestions? Feel free to [open an issue on GitHub](https://github.com/poole/issues/new) or [ask me on Twitter](https://twitter.com/mdo).
-
-Thanks for reading!
