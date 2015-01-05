@@ -358,6 +358,6 @@ based on the type of the control. We can also look for specific controls to remo
 the control by name (or predicate function) and then removing it:
 
 {% highlight python %}
-br.form.find_control('ctl00$cphMain$btnSearch')
+ctl = br.form.find_control('ctl00$cphMain$btnSearch')
 br.form.controls.remove(ctl)
 {% endhighlight %}
