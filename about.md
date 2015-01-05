@@ -10,7 +10,7 @@ since 2001, and freelancing since 2010.
 
 My professional background is predominantly in C and Python:
 
-* C (14 years) - Systems development, BSD sockets, embedded development
+* C (14 years) - System programming, BSD sockets, embedded development
 * Python (4 years) - Django web development, web/data-scraping
 
 Since 2012, I've run <a target="_blank" href="http://www.neekanee.com">Neekanee.com</a>, an international job search engine that 
