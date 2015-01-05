@@ -314,7 +314,7 @@ Try it and you will see that it will fail with the error `*** ItemNotFoundError:
 {% highlight python %}
 (Pdb) print self.br.form
 print self.br.form
-<frmSearch POST https://www.exampmle.com/search application/x-www-form-urlencoded
+<frmSearch POST https://www.example.com/search application/x-www-form-urlencoded
   <SelectControl(searchAuxRegionID=[, 1, 3, 4, 5, *6])>
   <SelectControl(searchAuxCountryID=[*])>
   <SelectControl(searchAuxStateID=[*])>
