@@ -126,7 +126,7 @@ ctl =  self.br.form.find_control('hitsPerPage')
 ctl.value = ['50']
 {% endhighlight %}
 
-If you get a readonly error 
+If you get the read-only error 
 
 `ValueError: control '<em>control_name</em>' is readonly` 
 
