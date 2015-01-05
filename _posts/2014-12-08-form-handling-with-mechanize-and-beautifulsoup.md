@@ -9,7 +9,7 @@ HTML forms. <a target="_blank" href="http://www.crummy.com/software/BeautifulSou
 is a library for parsing and extracting data from HTML. Together they form a powerful 
 combination of tools for web scraping.
 
-In this post, I'll highlight some of the features Mechanize provides for
+In this post, I'll highlight some of the features that Mechanize provides for
 manipulating HTML forms. Specifically, I'll go over the following:
 
 * Opening a page with mechanize and selecting a form
@@ -19,8 +19,8 @@ manipulating HTML forms. Specifically, I'll go over the following:
 
 ### Setup
 
-In order to install Mechanize and BeautifulSoup within a virtual environment, execute
-the following commands: 
+Execute the following commands in order to install Mechanize and BeautifulSoup within a 
+virtual environment: 
 
 {% highlight bash %}
 $ mkdir scraper && cd scraper
@@ -116,7 +116,7 @@ self.br.form.set_value('CLoad', 'boption')
 self.br.form.set_value(['50'], 'hitsPerPage')
 {% endhighlight %}
 
-And here's yet another way to write the above:
+Which is also equivalent to:
 
 {% highlight python %}
 ctl =  self.br.form.find_control('boption')
@@ -126,8 +126,11 @@ ctl =  self.br.form.find_control('hitsPerPage')
 ctl.value = ['50']
 {% endhighlight %}
 
-If you get a readonly error `ValueError: control '<em>control_name</em>' is readonly` 
-,when filling out the from, change the control's readonly attribute to `False`:
+If you get a readonly error 
+
+`ValueError: control '<em>control_name</em>' is readonly` 
+
+when filling out the from, change the control's readonly attribute to `False`:
 
 {% highlight python %}
 br.form.find_control('control_name').readonly = False
@@ -170,8 +173,8 @@ br.submit()
 
 Sometimes you can't just call `submit` with no arguments because there's more than 
 one submit button and you want mechanize to choose a specific one. A common scenario 
-is when one of the buttons is for 'Search' and the other is for 'Reset'ing or 
-'Clear'ing the form.
+is when one of the buttons is for 'Search' and the other is for Resetting or 
+Clearing the form.
 
 {% highlight html %}
 <form name="searchForm" method="post" action="search.do">
@@ -194,45 +197,6 @@ or specify the name:
 {% highlight python %}
 br.select_form('searchForm')
 br.submit(name='input')
-{% endhighlight %}
-
-### Getting a list of items
-
-Sometimes we want to get all of the results for every item in a select-dropdown.
-To do so, get a list of all the items in the select control before hand and then
-submit them one a time to get the results for each item. 
-
-For instance, imagine we have the following form and want to get the results for 
-each major (acct, comp, math) available for selection:
-
-{% highlight html %}
-<form name="course_schedule" action="." method="post">
-  <select name="major">
-    <option value="acct">Accounting</option>
-    <option value="comp">Computer Science</option>
-    <option value="math">Mathematics</option>
-  </select>       
-  ...
-</form>
-{% endhighlight %}
-
-Then we can use something like the following:
-
-{% highlight python %}
-br.select_form('course_schedule')
-items = br.form.find_control('major').get_items()
-
-for item in self.items:
-  label = ' '.join([label.text for label in item.get_labels()])
-  print 'Getting results for ', label
-
-  br.open(url)
-  br.select_form('course_schedule')
-  br.form['major'] = [ item.name ]
-  br.submit()
-
-  # the results
-  print br.response().read()
 {% endhighlight %}
 
 ## When things go wrong
@@ -269,7 +233,8 @@ br.submit()
 ### Adding controls
 
 Sometimes mechanize will not pick up certain hidden form controls. I've encountered this with ASP.NET
-pages where mechanize won't pick up the following controls (__EVENTTARGET, __EVENTARGUMENT, __LASTFOCUS):
+pages where mechanize won't pick up the __EVENTTARGET, __EVENTARGUMENT, and __LASTFOCUS controls in a
+form like the following:
  
 {% highlight html %}
 <form name="ctl00" method="post" action="search" id="ctl00"> 
@@ -297,7 +262,8 @@ br.form.fixup()
 
 Sometimes a control's values are set dynamically via javascript. So when you go
 to set the values for these controls with mechanize, there's no list of items to choose
-from because mechanize can't run javascript that would have created them.
+from because mechanize can't run the javascript that would have created them in the 
+first place.
 
 I've encountered this with forms that dynamically generate a select drop down for region,
 country, state, city, etc. Here's an example of that scenario:
@@ -373,7 +339,7 @@ All of the previous examples have assumed that we need to add controls to make a
 you will encounter cases where you need to remove controls in order to get the form submission to work. You can remove
 controls by calling `br.form.controls.remove` and providing an instance of the control you wish to delete. 
 
-Here's an example where we remove all of submit, image, or checkbox controls from the form:
+Here's an example where we remove all of the submit, image, or checkbox controls from the form:
 
 {% highlight python %}
 for control in br.form.controls[:]:
@@ -381,6 +347,3 @@ for control in br.form.controls[:]:
     br.form.controls.remove(control)
 {% endhighlight %}
 
-## Conclusion
-
-I hope the above information was useful to you. 
