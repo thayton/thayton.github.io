@@ -289,11 +289,11 @@ country, state, city, etc. Here's an example of that scenario:
 Note in the above form that the second select list for country is empty. That's because it doesn't get populated until 
 you've chosen a value for region from the first select list.
 
-Once you select the region, it will trigger javascript code in the onchange attribute to dynamically gnerate a 
+Once you select the region, it will trigger javascript code in the onchange attribute to dynamically generate a 
 list of country items. 
 
-In a real browser we can see this is in action. Say I select North America from the dropdown. This causes the 
-searchAuxCountryID select dropdown to be populated with the following list of values. 
+For instance, say I select North America from the dropdown. This causes the searchAuxCountryID select dropdown to 
+be populated with the following list of values. 
 
 {% highlight html %}
 <select id="searchAuxCountryID" name="searchAuxCountryID" onchange="PopulateCombo(document.frmSearch.searchAuxStateID);">
@@ -303,10 +303,13 @@ searchAuxCountryID select dropdown to be populated with the following list of va
 </select>
 {% endhighlight %}
 
-Now in the browser I can select which country I want to submit in the form.
+Now I can select which country I want to submit in the form.
 
-But how do we do all of this in mechanize? Can you just try setting the value of the `searchAuxCountryID`
-to `3` or `4`? Nope, it will fail with the error `*** ItemNotFoundError: insufficient items with name '<your-value>'`:
+But how can we handle this in mechanize where the javascript code won't be running? 
+
+Can you just try setting the value of the `searchAuxCountryID` to `3` or `4`? 
+
+Try it and you will see that it will fail with the error `*** ItemNotFoundError: insufficient items with name '<your-value>'`:
 
 {% highlight python %}
 (Pdb) print self.br.form
