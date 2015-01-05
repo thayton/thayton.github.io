@@ -247,9 +247,9 @@ in a form like the following:
 </form>
 {% endhighlight %}
 
-Since mechanize does not pick up these controls, you will need to create them yourself
-to get the form submission to work. Use the `new_control` method to add these controls
-to the form and set their values at the same time:
+Since mechanize doesn't pick up these controls, you will need to create them manually
+in order to get the form submission to work. Use the `new_control` method to add these 
+controls to the form and set their values at the same time:
 
 {% highlight python %}
 br.form.new_control('hidden', '__EVENTTARGET',   {'value': '$next_page'})
