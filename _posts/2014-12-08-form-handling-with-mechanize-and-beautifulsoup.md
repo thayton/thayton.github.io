@@ -349,3 +349,11 @@ for control in br.form.controls[:]:
     br.form.controls.remove(control)
 {% endhighlight %}
 
+Note that in the above example we are iterating through all of the controls in the form and filtering
+based on the type of the control. We can also look for specific controls to remove by first finding
+the control by name (or predicate function) and then removing it:
+
+{% highlight python %}
+br.form.find_control('ctl00$cphMain$btnSearch')
+br.form.controls.remove(ctl)
+{% endhighlight %}
