@@ -336,8 +336,10 @@ br.form['searchAuxCountryID'] = ['3']
 ### Removing controls to make form submissions work
 
 All of the previous examples have assumed that we need to add controls to make a form submission work. But sometimes
-you will encounter cases where you need to remove controls in order to get the form submission to work. You can remove
-controls by calling `br.form.controls.remove` and providing an instance of the control you wish to delete. 
+you will encounter cases where you need to remove controls in order to get the form submission to work. 
+
+Remove controls by calling `br.form.controls.remove` with the instance of the control you wish to delete as the
+argument. 
 
 Here's an example where we remove all of the submit, image, or checkbox controls from the form:
 
