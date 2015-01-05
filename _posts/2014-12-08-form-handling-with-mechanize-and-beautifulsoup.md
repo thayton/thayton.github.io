@@ -232,7 +232,7 @@ br.submit()
 
 ### Adding controls
 
-Sometimes mechanize will not pick up certain hidden form controls. I've encountered this with ASP.NET
+Sometimes mechanize won't pick up certain hidden form controls. I've encountered this with ASP.NET
 pages where mechanize won't pick up the `__EVENTTARGET`, `__EVENTARGUMENT`, and `__LASTFOCUS` controls 
 in a form like the following:
  
