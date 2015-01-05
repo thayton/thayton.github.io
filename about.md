@@ -3,7 +3,7 @@ layout: page
 title: About
 ---
 
-[screenshot](/assets/me.jpeg)
+<img style="float: left" src="/assets/me.jpeg">
 
 My name is Todd Hayton and I'm a freelance software developer living in the DC metro area. I've been programming professionally
 since 2001, and freelancing since 2010. My professional background is predominantly in C and Python:
