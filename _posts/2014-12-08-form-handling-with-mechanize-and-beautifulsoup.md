@@ -130,7 +130,7 @@ If you get the read-only error
 
 `ValueError: control '<em>control_name</em>' is readonly` 
 
-when filling out the from, change the control's readonly attribute to `False`:
+when filling out the form, change the control's readonly attribute to `False`:
 
 {% highlight python %}
 br.form.find_control('control_name').readonly = False
@@ -233,8 +233,8 @@ br.submit()
 ### Adding controls
 
 Sometimes mechanize will not pick up certain hidden form controls. I've encountered this with ASP.NET
-pages where mechanize won't pick up the __EVENTTARGET, __EVENTARGUMENT, and __LASTFOCUS controls in a
-form like the following:
+pages where mechanize won't pick up the `__EVENTTARGET`, `__EVENTARGUMENT`, and `__LASTFOCUS` controls 
+in a form like the following:
  
 {% highlight html %}
 <form name="ctl00" method="post" action="search" id="ctl00"> 
