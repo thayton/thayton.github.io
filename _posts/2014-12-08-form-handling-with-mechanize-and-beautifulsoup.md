@@ -313,7 +313,7 @@ Try it and you will see that it will fail with the error `*** ItemNotFoundError:
 
 {% highlight python %}
 (Pdb) print self.br.form
-print self.br.form
+
 <frmSearch POST https://www.example.com/search application/x-www-form-urlencoded
   <SelectControl(searchAuxRegionID=[, 1, 3, 4, 5, *6])>
   <SelectControl(searchAuxCountryID=[*])>
@@ -321,7 +321,6 @@ print self.br.form
   <SelectControl(searchAuxCityID=[*])>>
 
 (Pdb) self.br.form['searchAuxCountryID'] = ['3']
-self.br.form['searchAuxCountryID'] = ['3']
 
 *** ItemNotFoundError: insufficient items with name '3'
 {% endhighlight %}
@@ -333,6 +332,8 @@ within the `searchAuxCountryID` control:
 {% highlight python %}
 item = Item(br.form.find_control(name='searchAuxCountryID'),
            {'contents': '3', 'value': '3', 'label': 3})
+
+# Now it works!
 br.form['searchAuxCountryID'] = ['3']
 {% endhighlight %}
 
