@@ -1,0 +1,1 @@
+http://grisha.org/blog/2013/04/02/linus-on-understanding-pointers/
