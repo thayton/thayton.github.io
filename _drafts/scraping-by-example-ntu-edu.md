@@ -23,7 +23,7 @@ Here's a screenshot of the form they want results for:
 The first select dropdown is for selecting an academic year. The second select dropdown is for
 selecting an academic department (accounting, art, business, etc.). 
 
-Note that the first dropdown has the most recent academic year selected by default. 
+Note that the first dropdown already has the most recent academic year selected by default. 
 
 If we take a look at the HTML for the form, we see the following:
 
@@ -213,7 +213,7 @@ the event that the first couple of requests fail because we're hitting their ser
 
 ### Writing the results to file
 
-Finally we've got the results. Let's write them into a file whose named is based
+We've got the results. Now let's write them into a file whose named is based
 off of the item whose data we're saving:
 
 {% highlight python %}
@@ -225,6 +225,10 @@ off of the item whose data we're saving:
             f.write(results)
             f.close()
 {% endhighlight %}
+
+### Wrapping Up
+
+[github](https://github.com/thayton/ntu-edu/blob/master/ntu-edu.py)
 
 ### Conclusion
 
