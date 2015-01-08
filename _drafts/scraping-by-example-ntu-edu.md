@@ -226,9 +226,53 @@ off of the item whose data we're saving:
             f.close()
 {% endhighlight %}
 
-### Wrapping Up
+### Final Code
 
-[github](https://github.com/thayton/ntu-edu/blob/master/ntu-edu.py)
+That's it. Now let's try running it.
+
+{% highlight bash %}
+$ ./ntu-edu.py
+Generating list of items for form selection
+Got 371 items for form selection
+Submitting form for item ACC;GA;1;F
+Writing results for item ACC;GA;1;F to file Accountancy-(GA)-Year-1.html
+Submitting form for item ACC;GA;2;F
+Writing results for item ACC;GA;2;F to file Accountancy-(GA)-Year-2.html
+Submitting form for item ACC;GA;3;F
+Writing results for item ACC;GA;3;F to file Accountancy-(GA)-Year-3.html
+^CExiting...
+{% endhighlight %}
+
+{% highlight bash %}
+$ ls -1 *.html
+Accountancy-(GA)-Year-1.html
+Accountancy-(GA)-Year-2.html
+Accountancy-(GA)-Year-3.html
+Accountancy-(GB)-Year-1.html
+Accountancy-(GB)-Year-2.html
+Accountancy-(GB)-Year-3.html
+Art,-Design-&-Media-(ANIM)-Year-2.html
+Art,-Design-&-Media-(ANIM)-Year-3.html
+Art,-Design-&-Media-Year-1.html
+Art,-Design-&-Media-Year-4.html
+{% endhighlight %}
+
+{% highlight html %}
+$ head Accountancy-\(GA\)-Year-1.html 
+<BODY BGCOLOR="lightyellow">
+<HTML>
+<HEAD>
+<TITLE></TITLE>
+</HEAD>
+<BODY>
+<CENTER><FONT SIZE=4 FACE="Arial">
+<B><B><FONT SIZE=2 COLOR=black>2014 2 Accountancy Year 1 (GA)</FONT></B></B>
+</FONT>
+<BR>
+{% endhighlight %}
+
+If you'd like to see a working version of the code in its final form, it's available on github 
+[here](https://github.com/thayton/ntu-edu/blob/master/ntu-edu.py).
 
 ### Conclusion
 
