@@ -99,20 +99,20 @@ Now lets add a top-level method named `scrape` that performs the following sub-t
 * Save the results returned for each item
 
 {% highlight python %}
-    def scrape(self):
-        '''
-        Get the list of items in the second dropdown menu and submit 
-        the form for each item. Save the results to file.
-        '''
-        items = self.get_items()
+def scrape(self):
+    '''
+    Get the list of items in the second dropdown menu and submit 
+    the form for each item. Save the results to file.
+    '''
+    items = self.get_items()
 
-        for item in items:
-            # Skip invalid/blank item selections
-            if len(item.name) < 1:
-                continue
+    for item in items:
+        # Skip invalid/blank item selections
+        if len(item.name) < 1:
+            continue
 
-            results = self.submit_form(item)
-            self.item_results_to_file(item, results)
+        results = self.submit_form(item)
+        self.item_results_to_file(item, results)
 {% endhighlight %}
 
 Now let's implement each of the sub-tasks in turn.
@@ -152,15 +152,15 @@ method to return a list of all the items attached to that control.
 Here's the code:
 
 {% highlight python %}
-    def get_items(self):
-        '''
-        Get the list of items in the second dropdown of the form
-        '''
-        self.br.open(self.url)
-        self.br.select_form(predicate=select_form)
+def get_items(self):
+    '''
+    Get the list of items in the second dropdown of the form
+    '''
+    self.br.open(self.url)
+    self.br.select_form(predicate=select_form)
 
-        items = self.br.form.find_control('r_course_yr').get_items()
-        return items
+    items = self.br.form.find_control('r_course_yr').get_items()
+    return items
 {% endhighlight %}
 
 ### Part2: Submitting an item and reading the results
@@ -179,36 +179,36 @@ Here's the code. I've added error checking and a simple back-off/delay/retry loo
 the event that the first couple of requests fail because we're hitting their server too quickly.
 
 {% highlight python %}
-    def submit_form(self, item):
-        '''
-        Submit form using selection item.name and write the results
-        to file named according to item.label
-        '''
-        maxtries = 3
-        numtries = 0
+def submit_form(self, item):
+    '''
+    Submit form using selection item.name and write the results
+    to file named according to item.label
+    '''
+    maxtries = 3
+    numtries = 0
 
-        while numtries < maxtries:
-            try:
-                self.br.open(self.url)
-                self.br.select_form(predicate=select_form)
-                self.br.form['r_course_yr'] = [ item.name ]
-                self.br.form.find_control('boption').readonly = False
-                self.br.form['boption'] = 'CLoad'
-                self.br.submit()
-                break
-            except (mechanize.HTTPError, mechanize.URLError) as e:
-                if isinstance(e,mechanize.HTTPError):
-                    print e.code
-                else:
-                    print e.reason.args
+    while numtries < maxtries:
+        try:
+            self.br.open(self.url)
+            self.br.select_form(predicate=select_form)
+            self.br.form['r_course_yr'] = [ item.name ]
+            self.br.form.find_control('boption').readonly = False
+            self.br.form['boption'] = 'CLoad'
+            self.br.submit()
+            break
+        except (mechanize.HTTPError, mechanize.URLError) as e:
+            if isinstance(e,mechanize.HTTPError):
+                print e.code
+            else:
+                print e.reason.args
 
-            numtries += 1
-            time.sleep(numtries * self.delay)
+        numtries += 1
+        time.sleep(numtries * self.delay)
 
-        if numtries == maxtries:
-            raise
+    if numtries == maxtries:
+        raise
 
-        return self.br.response().read()
+    return self.br.response().read()
 {% endhighlight %}
 
 ### Writing the results to file
@@ -217,13 +217,13 @@ We've got the results. Now let's write them into a file whose named is based
 off of the item whose data we're saving:
 
 {% highlight python %}
-    def item_results_to_file(self, item, results):
-        label = ' '.join([label.text for label in item.get_labels()])
-        label = '-'.join(label.split())
+def item_results_to_file(self, item, results):
+    label = ' '.join([label.text for label in item.get_labels()])
+    label = '-'.join(label.split())
 
-        with open("%s.html" % label, 'w') as f:
-            f.write(results)
-            f.close()
+    with open("%s.html" % label, 'w') as f:
+        f.write(results)
+        f.close()
 {% endhighlight %}
 
 ### Final Code
