@@ -8,6 +8,10 @@ in a select menu on a given form.
 
 For instance, the following scraping job came up on oDesk a few weeks back:
 
+![Form Image 1](/assets/brassring/1.png)
+![Form Image 1](/assets/brassring/2.png)
+![Form Image 1](/assets/brassring/3.png)
+
 <table>
   <thead>
     <tr>
@@ -172,6 +176,34 @@ def seen_all_jobs(self):
     self.soupify_form(soup=self.soup, form_name='frmMassSelect')
     self.br.select_form('frmMassSelect')
     return self.numJobsSeen >= int(self.br.form['totalrecords'])
+{% endhighlight %}
+
+### Pagination
+
+Records are returned 50 results at a time. 
+
+{% highlight html %}
+<form name="frmMassSelect" method="post" action="searchresults.aspx?SID=^Ma_slp_rhc_ooksXuPqc_slp_rhc__slp_rhc_4aAdjbWLwoLkE4hXrS/w7UiUsLxM6pDX4cUsEv3OAkRPQnDuWC" style="visibility:hidden" aria-hidden="true">
+  <input type="hidden" name="JobInfo" value="">
+  <input type="hidden" name="recordstart" value="1">
+  <input type="hidden" name="totalrecords" value="917">
+  <input type="hidden" name="sortOrder" value="ASC">
+  <input type="hidden" name="sortField" value="FORMTEXT13">
+  <input type="hidden" name="sorting" value="">
+  <input type="hidden" name="JobSiteInfo" value="">
+</form>
+{% endhighlight %}
+
+Form data sent is as follows:
+
+{% highlight javascript %}
+JobInfo:%%
+recordstart:51
+totalrecords:917
+sortOrder:ASC
+sortField:FORMTEXT13
+sorting:
+JobSiteInfo:
 {% endhighlight %}
 
 {% highlight python %}
