@@ -3,14 +3,49 @@ layout: post
 title: Scraping by Example - Handling JSON data
 ---
 
-A common scraping task is to get all of the results returned for every option
-in a select menu on a given form.
+Today's post will cover scraping sites where the pages are dynamically generated from JSON data. Compared to scraping 
+static pages, scraping pages rendered from JSON is often easier: simply load the JSON string and iterate through each 
+object, extracting the relevent key/value pairs as you go.
 
-For instance, the following scraping job came up on oDesk a few weeks back:
+For today's example, I'll demonstrate how to scrape jobs from the Brassring Applicant Tracking System (ATS). For those 
+who've never encountered Brassring, their software allows companies to post job openings, collect resumes, and track 
+applicants. 
+
+The following link takes you to the job search page for [Bright Horizons](http://www.brighthorizons.com/), a child care 
+company that uses the Brassring ATS to host their job openings:
+
+[https://sjobs.brassring.com/TGWebHost/home.aspx?partnerid=25595&siteid=5216](https://sjobs.brassring.com/TGWebHost/home.aspx?partnerid=25595&siteid=5216)
+
+If you click the above link, you'll land at the Welcome page. From there, click on the Search openings link.
 
 ![Form Image 1](/assets/brassring/1.png)
+
+The Search openings page presents a form where you can refine your search based on keywords, location, etc.
+
 ![Form Image 1](/assets/brassring/2.png)
+
+Once you've submitted your search you'll end up at the search results page.
+
 ![Form Image 1](/assets/brassring/3.png)
+
+The job search results in the above table are dynamically generated from JSON data in one of the form controls. If we
+inspect the search results in our browser, we can see that the jobs results come from a form named `frmResults` with 
+a hidden input field containing the jobs:
+
+{% highlight html %}
+<form name="frmResults" method="post"  role="main">
+  ...
+  <input name="ctl00$MainContent$GridFormatter$json_tabledata" 
+    type="hidden" 
+    id="ctl00_MainContent_GridFormatter_json_tabledata" 
+    class="json_tabledata"
+    value="<see-table-below>"
+  />
+</form>
+{% endhighlight %}
+
+The value attribute in the above input field contains the jobs in JSON format. The JSON data for one of the jobs is 
+shown below in table form for readability.
 
 <table>
   <thead>
@@ -84,6 +119,23 @@ For instance, the following scraping job came up on oDesk a few weeks back:
     </tr>
   </tbody>
 </table>
+
+From the above table we can see that the job title and url are retrieved using the FORMTEXT13
+key. The job city and state are retrieved using the FORMTEXT12 and FORMTEXT8 keys respectively.
+
+If we look back at the above screenshots, we can also see that the job search results are returned 
+50 records at a time. So, if want to get all of the jobs we'll also have to be able to handle pagination.
+
+Let's take stock of where we're at. In order to scrape jobs from this site we are going to have to
+do the following:
+
+* Open the Welcome page
+* Click on the Search openings link
+* Extract the jobs from the `frmResults` hidden input field
+* Click on the Next page link
+* Repeat the previous steps until we reach the last page
+
+Let's get started.
 
 {% highlight python %}
 import re, json
