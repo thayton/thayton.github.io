@@ -8,6 +8,79 @@ in a select menu on a given form.
 
 For instance, the following scraping job came up on oDesk a few weeks back:
 
+<table>
+  <thead>
+    <tr>
+      <th>Key</th>
+      <th>Value</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>FORMTEXT12</td>
+      <td>Milpitas</td>
+    </tr>
+    <tr>
+      <td>FORMTEXT13</td> 
+      <td>{% highlight html %}
+<input type='hidden' value="leadteacher">
+</input>
+<a href="jobdetails.aspx?SID=%5eY4xaA%2fHuxO7HUAxWgQZaaF5irzzrwqM_slp_rhc_Fd7LOkibpxyWh7faRjNg%2f29PF5WbMpEH&jobId=427661&type=search&JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=427661_5216&GQId=480">
+  Child Care Lead Teacher
+</a>{% endhighlight %}</td>
+    </tr>
+    <tr>
+      <td>FORMTEXT10</td>
+      <td> Bright Horizons in Milpitas</td>
+    </tr>
+    <tr>
+      <td>FORMTEXT11</td> 
+      <td>95035</td>
+    </tr>
+    <tr>
+      <td>FORMTEXT8</td>
+      <td>California</td>
+    </tr>
+    <tr>
+      <td>currentRowHiddenData</td>
+      <td>{% highlight html %}
+<input type='hidden' 
+  name='hidJobSiteId' 
+  id='hidJobSiteId_427661'  
+  value='427661_5216' />
+<input type='hidden' 
+  name='hidJobGQId'  
+  value='480' />
+      {% endhighlight %}</td>
+    </tr>
+    <tr>
+      <td>AutoReq</td>
+      <td>17611BR</td>
+    </tr>
+    <tr>
+      <td>ORMTEXT5</td> 
+      <td>Full-Time</td>
+    </tr>
+    <tr>
+      <td>FORMTEXT3</td>
+      <td>Regular</td>
+    </tr>
+    <tr>
+      <td>chkColumn</td>
+      <td>{% highlight html %}
+<label for='427661'></label>
+<div style='text-align:center'>
+  <input type='checkbox' title='leadteacher' 
+      id='427661' name='chkJobClientIds' 
+      value='427661|1|480' 
+      onClick=javascript:onCheckJob('427661',427661,'1','480','1'); 
+  />
+</div>
+     {% endhighlight %}</td>
+    </tr>
+  </tbody>
+</table>
+
 {% highlight python %}
 import re, json
 import mechanize
@@ -33,8 +106,10 @@ def scrape(self):
 
 {% highlight python %}
 def open_search_openings_page(self):
+    r = re.compile(r'Search openings', re.I)
     self.br.open(self.url)
-    self.br.follow_link(self.br.find_link(text_regex=re.compile(r'Search openings', re.I)))
+    self.br.follow_link(self.br.find_link(text_regex=r))
+
 {% endhighlight %}
 
 {% highlight python %}
@@ -57,25 +132,32 @@ def soupify_form(self, soup, form_name):
 
     form = soup.find('form', attrs={'name': form_name})
     html = str(form)
-    resp = mechanize.make_response(html, [("Content-Type", "text/html")],
-                                   self.br.geturl(), 200, "OK")
+    resp = mechanize.make_response(
+        html, 
+        [("Content-Type", "text/html")],
+        self.br.geturl(),
+        200, "OK"
+    )
     self.br.set_response(resp)
+
 {% endhighlight %}
 
 {% highlight python %}
 def scrape_jobs(self):
     while not self.seen_all_jobs():
-        i = self.soup.find('input', id='ctl00_MainContent_GridFormatter_json_tabledata')
+        t = 'ctl00_MainContent_GridFormatter_json_tabledata'
+        i = self.soup.find('input', id=t)
         j = json.loads(i['value'])
 
         for x in j:
             # debug
             print '\n'.join('%s\t%s' % (y,z) for y,z in x.items())
+            print '\n'
 
             job = {}
-            job['title'] = self.get_title_from_dict(x)
-            job['location'] = self.get_location_from_dict(x)
-            job['url'] = self.get_url_from_dict(x)
+            job['title'] = self.get_title_from_job_dict(x)
+            job['location'] = self.get_location_from_job_dict(x)
+            job['url'] = self.get_url_from_job_dict(x)
 
             self.jobs.append(job)
 
@@ -102,17 +184,17 @@ def goto_next_page(self):
 {% endhighlight %}
 
 {% highlight python %}
-def get_title_from_dict(self, dict):
+def get_title_from_job_dict(self, job_dict):
     pass
 
-def get_location_from_dict(self, dict):
+def get_location_from_job_dict(self, job_dict):
     pass
 
-def get_soup_anchor_from_dict(self, dict):
+def get_soup_anchor_from_job_dict(self, job_dict):
     pass
 
-def get_url_from_dict(self, dict):
-    a = self.get_soup_anchor_from_dict(dict)
+def get_url_from_job_dict(self, job_dict):
+    a = self.get_soup_anchor_from_job_dict(job_dict)
     u = urlparse.urljoin(self.br.geturl(), a['href'])
     u = self.refine_url(u)
     return u
@@ -122,7 +204,10 @@ def get_url_from_dict(self, dict):
 def refine_url(self, job_url):
     """
     """
-    items = urlutil.url_query_get(self.url.lower(), ['partnerid', 'siteid'])
+    items = urlutil.url_query_get(
+        self.url.lower(), 
+        ['partnerid', 'siteid']
+    )
 
     url = urlutil.url_query_filter(job_url, 'jobId')
     url = urlutil.url_query_add(url, items.iteritems())
@@ -133,7 +218,7 @@ def refine_url(self, job_url):
 {% highlight python %}
 #!/usr/bin/env python
 
-import signal
+import sys, signal
 from brassring import BrassringJobScraper
 from bs4 import BeautifulSoup
 
@@ -148,18 +233,18 @@ class BrightHorizonsJobScraper(BrassringJobScraper):
     def __init__(self):
         super(BrightHorizonsJobScraper, self).__init__(url=URL)
 
-    def get_title_from_dict(self, dict):
-        t = dict['FORMTEXT13']
+    def get_title_from_job_dict(self, job_dict):
+        t = job_dict['FORMTEXT13']
         t = BeautifulSoup(t)
         return t.text
 
-    def get_location_from_dict(self, dict):
-        l = dict['FORMTEXT12'] + ', ' + dict['FORMTEXT8']
+    def get_location_from_job_dict(self, job_dict):
+        l = job_dict['FORMTEXT12'] + ', ' + job_dict['FORMTEXT8']
         l = l.strip()
         return l
 
-    def get_soup_anchor_from_dict(self, dict):
-        t = dict['FORMTEXT13']
+    def get_soup_anchor_from_job_dict(self, job_dict):
+        t = job_dict['FORMTEXT13']
         t = BeautifulSoup(t)
         return t.a
 
