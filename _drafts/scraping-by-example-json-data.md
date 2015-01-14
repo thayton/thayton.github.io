@@ -11,6 +11,8 @@ For today's example, I'll demonstrate how to scrape jobs from the Brassring Appl
 who've never encountered Brassring, their software allows companies to post job openings, collect resumes, and track 
 applicants. 
 
+## Overview 
+
 The following link takes you to the job search page for [Bright Horizons](http://www.brighthorizons.com/), a child care 
 company that uses the Brassring ATS to host their job openings:
 
@@ -28,9 +30,10 @@ Once you've submitted your search you'll end up at the search results page.
 
 ![Form Image 1](/assets/brassring/3.png)
 
-The job search results in the above table are dynamically generated from JSON data in one of the form controls. If we
-inspect the search results in our browser, we can see that the jobs results come from a form named `frmResults` with 
-a hidden input field containing the jobs:
+The job search results in the above table are dynamically generated from JSON data in one of the form controls. 
+
+Specifically, the jobs come from a form named `frmResults` with a hidden input field named `ctl00$MainContent$GridFormatter$json_tabledata`. 
+The value attribute in this field contains the jobs in JSON format.
 
 {% highlight html %}
 <form name="frmResults" method="post"  role="main">
@@ -44,8 +47,7 @@ a hidden input field containing the jobs:
 </form>
 {% endhighlight %}
 
-The value attribute in the above input field contains the jobs in JSON format. The JSON data for one of the jobs is 
-shown below in table form for readability.
+The JSON data for one of the jobs from this field is shown below in table form for readability.
 
 <table>
   <thead>
@@ -120,11 +122,12 @@ shown below in table form for readability.
   </tbody>
 </table>
 
-From the above table we can see that the job title and url are retrieved using the FORMTEXT13
-key. The job city and state are retrieved using the FORMTEXT12 and FORMTEXT8 keys respectively.
+From the above table we can see that the job title and url are retrieved using the `FORMTEXT13`
+key. The job's location (city and state) are retrieved using the `FORMTEXT12` and `FORMTEXT8` 
+keys respectively.
 
 If we look back at the above screenshots, we can also see that the job search results are returned 
-50 records at a time. So, if want to get all of the jobs we'll also have to be able to handle pagination.
+50 records at a time. If want to get all of the jobs we'll need to be able to handle pagination.
 
 Let's take stock of where we're at. In order to scrape jobs from this site we are going to have to
 do the following:
@@ -135,7 +138,9 @@ do the following:
 * Click on the Next page link
 * Repeat the previous steps until we reach the last page
 
-Let's get started.
+## Implementation
+
+Let's get started. First we'll sketch out a base class to handle scraping Brassring job sites.
 
 {% highlight python %}
 import re, json
@@ -153,6 +158,8 @@ class BrassringJobScraper(object):
         self.numJobsSeen = 0
 {% endhighlight %}
 
+Now, let's add a `scrape` method that will encapsulate all of the logic.
+
 {% highlight python %}
 def scrape(self):
     self.open_search_openings_page()
@@ -160,13 +167,19 @@ def scrape(self):
     self.scrape_jobs()
 {% endhighlight %}
 
+Our search openings method opens the landing page and then follows the
+search openings link. We use a case-insensitive regex for the link search
+because the case for this link varies from site to site.
+
 {% highlight python %}
 def open_search_openings_page(self):
     r = re.compile(r'Search openings', re.I)
     self.br.open(self.url)
     self.br.follow_link(self.br.find_link(text_regex=r))
-
 {% endhighlight %}
+
+Now we write the method to submit the search form. We don't set any keywords
+or filter by location. We want to get all of the jobs back.
 
 {% highlight python %}
 def submit_search_form(self):
@@ -198,6 +211,9 @@ def soupify_form(self, soup, form_name):
 
 {% endhighlight %}
 
+Now comes the meat of our scraper. We find the control containing the jobs and load in the JSON data from 
+that control's value. 
+
 {% highlight python %}
 def scrape_jobs(self):
     while not self.seen_all_jobs():
@@ -223,16 +239,31 @@ def scrape_jobs(self):
         self.goto_next_page()
 {% endhighlight %}
 
-{% highlight python %}
-def seen_all_jobs(self):
-    self.soupify_form(soup=self.soup, form_name='frmMassSelect')
-    self.br.select_form('frmMassSelect')
-    return self.numJobsSeen >= int(self.br.form['totalrecords'])
-{% endhighlight %}
-
 ### Pagination
 
-Records are returned 50 results at a time. 
+Records are returned 50 results at a time. In order to get all of the jobs we'll use
+a method named `goto_next_page` to go to the next page of job results and a method named
+`seen_all_jobs` to determine once we've reached the last page.
+
+If we click on the `Next` link from the first page and inspect the form data sent to the 
+server we see the following POST data sent to the server:
+
+{% highlight javascript %}
+JobInfo:%%
+recordstart:51
+totalrecords:917
+sortOrder:ASC
+sortField:FORMTEXT13
+sorting:
+JobSiteInfo:
+{% endhighlight %}
+
+This POST data comes form a form named `frmMassSelect`. This form also contains the total
+number of jobs in a control named `totalRecords`. 
+
+The next page functionality works by specifying the starting record in a 50-record result 
+set in the control field named `recordstart`. In other words, `recordstart` would be 1 and 
+51 for result sets [1,50], [51,100], which correspond to pages 1 and 2 respectively.
 
 {% highlight html %}
 <form name="frmMassSelect" method="post" action="searchresults.aspx?SID=^Ma_slp_rhc_ooksXuPqc_slp_rhc__slp_rhc_4aAdjbWLwoLkE4hXrS/w7UiUsLxM6pDX4cUsEv3OAkRPQnDuWC" style="visibility:hidden" aria-hidden="true">
@@ -246,17 +277,8 @@ Records are returned 50 results at a time.
 </form>
 {% endhighlight %}
 
-Form data sent is as follows:
-
-{% highlight javascript %}
-JobInfo:%%
-recordstart:51
-totalrecords:917
-sortOrder:ASC
-sortField:FORMTEXT13
-sorting:
-JobSiteInfo:
-{% endhighlight %}
+To get the next page of results, we'll select the `frmMassSelect` form and set the `recordstart`
+control to be the number of jobs we've already seen plus 1. 
 
 {% highlight python %}
 def goto_next_page(self):
@@ -265,6 +287,17 @@ def goto_next_page(self):
     self.br.form['recordstart'] = '%d' % (self.numJobsSeen + 1)
     self.br.submit()
     self.soup = BeautifulSoup(self.br.response().read())
+{% endhighlight %}
+
+The `seen_all_jobs` method extracts the `totalrecords` field from the form
+and determines if the number of jobs we've seen matches the total number of
+jobs. If so, it means we've reached the final page of job results.
+
+{% highlight python %}
+def seen_all_jobs(self):
+    self.soupify_form(soup=self.soup, form_name='frmMassSelect')
+    self.br.select_form('frmMassSelect')
+    return self.numJobsSeen >= int(self.br.form['totalrecords'])
 {% endhighlight %}
 
 {% highlight python %}
@@ -341,3 +374,9 @@ if __name__ == '__main__':
     for j in scraper.jobs:
         print j
 {% endhighlight %}
+
+### Conclusion
+
+Have a small scraping task you'd like to get done for free?
+
+Email me the details and if I think it will make an instructive example I'll develop a solution for free in a future post.
