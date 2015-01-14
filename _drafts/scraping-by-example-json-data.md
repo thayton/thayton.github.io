@@ -3,9 +3,9 @@ layout: post
 title: Scraping by Example - Handling JSON data
 ---
 
-Today's post will cover scraping sites where the pages are dynamically generated from JSON data. Compared to scraping 
-static pages, scraping pages rendered from JSON is often easier: simply load the JSON string and iterate through each 
-object, extracting the relevent key/value pairs as you go.
+Today's post will cover scraping sites where the pages are dynamically generated from JSON data. Compared to static pages, 
+scraping pages rendered from JSON is often easier: simply load the JSON string and iterate through each object, extracting 
+the relevent key/value pairs as you go.
 
 For today's example, I'll demonstrate how to scrape jobs from the Brassring Applicant Tracking System (ATS). For those 
 who've never encountered Brassring, their software allows companies to post job openings, collect resumes, and track 
@@ -129,8 +129,8 @@ keys respectively.
 If we look back at the above screenshots, we can also see that the job search results are returned 
 50 records at a time. If want to get all of the jobs we'll need to be able to handle pagination.
 
-Let's take stock of where we're at. In order to scrape jobs from this site we are going to have to
-do the following:
+Let's take stock of our requirements. In order to scrape jobs from this site we are going to have 
+to do the following:
 
 * Open the Welcome page
 * Click on the Search openings link
@@ -138,9 +138,11 @@ do the following:
 * Click on the Next page link
 * Repeat the previous steps until we reach the last page
 
+Let's get started. 
+
 ## Implementation
 
-Let's get started. First we'll sketch out a base class to handle scraping Brassring job sites.
+First we'll sketch out a base class to handle scraping Brassring job sites.
 
 {% highlight python %}
 import re, json
@@ -282,8 +284,8 @@ The next page functionality works by specifying the starting record in a 50-reco
 set in a control field named `recordstart`. In other words, `recordstart` is 1 and 51 for 
 result sets `[1,50]`, `[51,100]`, which correspond to pages 1 and 2 respectively.
 
-To get the next page of results, we'll select the `frmMassSelect` form and set the `recordstart`
-control to be the number of jobs we've already seen plus 1. 
+To get each next page of results, we'll submit the `frmMassSelect` form with the `recordstart`
+control set to the number of jobs we've already seen plus 1. 
 
 {% highlight python %}
 def goto_next_page(self):
@@ -305,15 +307,8 @@ def seen_all_jobs(self):
     return self.numJobsSeen >= int(self.br.form['totalrecords'])
 {% endhighlight %}
 
-The `get_title_from_job_dict`, `get_location_from_dict`, and `get_url_from_job_dict` methods are
-where we'll extract the job information we desire. 
-
-For our implementation, we're going to leave these methods empty so that they can be implemented 
-in derived classes. We do this because the keys used to extract job title, location and url change 
-from site to site. 
-
-Each site will have a derived class that inherits from the BrassringJobScraper base class and implements
-these methods according to the site's specific key requirements:
+Now onto to the task of extracting the jobs data. The following methods will be used to extract 
+the title, location and jobs page url:
 
 {% highlight python %}
 def get_title_from_job_dict(self, job_dict):
@@ -331,6 +326,13 @@ def get_url_from_job_dict(self, job_dict):
     u = self.refine_url(u)
     return u
 {% endhighlight %}
+
+For our implementation, we're going to leave the first three methods empty so that they can be implemented 
+in derived classes. We do this because the keys used to extract the job title, location and url change 
+from site to site. 
+
+Each site will have a derived class that inherits from the BrassringJobScraper base class and implements
+these methods according to the site's specific key requirements.
 
 Here's the site-specific derived class for Bright Horizons. Note how we only have to
 implement three methods to scrape all of the jobs. This is because all of our logic
@@ -399,10 +401,10 @@ But note that url we extract from the JSON data has a lot of unnecessary paramet
 
 `jobdetails.aspx?SID=%5eEnlVV9o9EpB_slp_rhc_acR7YArHwQsgrzO5e8FYRi6rgQcr3e%2f1DKTvwIttnnGZdFDBpFzv&jobId=357662&type=search&JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=357662_5216&GQId=480`
 
-The only parameter we're interested in is `jobId`. We must refine the url down to our desired form.
+The only parameter we're interested in is `jobId`. We must trim the url down to our desired form.
 
 The `refine_url` method filters out all other parameters except `jobID` from the job url and 
-tacks on the `siteid` and `partnerid` parameters to get our final url form. 
+tacks on the `siteid` and `partnerid` parameters to get our final url. 
 
 {% highlight python %}
 def refine_url(self, job_url):
