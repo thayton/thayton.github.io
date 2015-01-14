@@ -189,6 +189,11 @@ def submit_search_form(self):
     self.soup = BeautifulSoup(self.br.response().read())
 {% endhighlight %}
 
+Sometimes mechanize will throw the error `ParseError: OPTION outside of SELECT`
+when you try to select a form. The call to `soupify_form` handles this case. It 
+runs the form through BeautifulSoup and sets the resulting HTML as mechanize's 
+current response page:
+
 {% highlight python %}
 def soupify_form(self, soup, form_name):
     #
@@ -242,11 +247,11 @@ def scrape_jobs(self):
 ### Pagination
 
 Records are returned 50 results at a time. In order to get all of the jobs we'll use
-a method named `goto_next_page` to go to the next page of job results and a method named
-`seen_all_jobs` to determine once we've reached the last page.
+a method named `goto_next_page` to iterate through each page and a method named `seen_all_jobs` 
+to determine once we've reached the last page.
 
-If we click on the `Next` link from the first page and inspect the form data sent to the 
-server we see the following POST data sent to the server:
+If we click on the `Next` link from the first page and inspect the network data we see the 
+following POST variables sent to the server:
 
 {% highlight javascript %}
 JobInfo:%%
@@ -261,10 +266,6 @@ JobSiteInfo:
 This POST data comes form a form named `frmMassSelect`. This form also contains the total
 number of jobs in a control named `totalRecords`. 
 
-The next page functionality works by specifying the starting record in a 50-record result 
-set in the control field named `recordstart`. In other words, `recordstart` would be 1 and 
-51 for result sets [1,50], [51,100], which correspond to pages 1 and 2 respectively.
-
 {% highlight html %}
 <form name="frmMassSelect" method="post" action="searchresults.aspx?SID=^Ma_slp_rhc_ooksXuPqc_slp_rhc__slp_rhc_4aAdjbWLwoLkE4hXrS/w7UiUsLxM6pDX4cUsEv3OAkRPQnDuWC" style="visibility:hidden" aria-hidden="true">
   <input type="hidden" name="JobInfo" value="">
@@ -276,6 +277,10 @@ set in the control field named `recordstart`. In other words, `recordstart` woul
   <input type="hidden" name="JobSiteInfo" value="">
 </form>
 {% endhighlight %}
+
+The next page functionality works by specifying the starting record in a 50-record result 
+set in a control field named `recordstart`. In other words, `recordstart` is 1 and 51 for 
+result sets `[1,50]`, `[51,100]`, which correspond to pages 1 and 2 respectively.
 
 To get the next page of results, we'll select the `frmMassSelect` form and set the `recordstart`
 control to be the number of jobs we've already seen plus 1. 
@@ -300,6 +305,16 @@ def seen_all_jobs(self):
     return self.numJobsSeen >= int(self.br.form['totalrecords'])
 {% endhighlight %}
 
+The `get_title_from_job_dict`, `get_location_from_dict`, and `get_url_from_job_dict` methods are
+where we'll extract the job information we desire. 
+
+For our implementation, we're going to leave these methods empty so that they can be implemented 
+in derived classes. We do this because the keys used to extract job title, location and url change 
+from site to site. 
+
+Each site will have a derived class that inherits from the BrassringJobScraper base class and implements
+these methods according to the site's specific key requirements:
+
 {% highlight python %}
 def get_title_from_job_dict(self, job_dict):
     pass
@@ -317,20 +332,10 @@ def get_url_from_job_dict(self, job_dict):
     return u
 {% endhighlight %}
 
-{% highlight python %}
-def refine_url(self, job_url):
-    """
-    """
-    items = urlutil.url_query_get(
-        self.url.lower(), 
-        ['partnerid', 'siteid']
-    )
-
-    url = urlutil.url_query_filter(job_url, 'jobId')
-    url = urlutil.url_query_add(url, items.iteritems())
-
-    return url
-{% endhighlight %}
+Here's the site-specific derived class for Bright Horizons. Note how we only have to
+implement three methods to scrape all of the jobs. This is because all of our logic
+is encapsulated in the BrassringJobScraper base class. This means we can easily add
+new sites that use the Brassring ATS with very little additional code.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -374,6 +379,66 @@ if __name__ == '__main__':
     for j in scraper.jobs:
         print j
 {% endhighlight %}
+
+The final portion to discuss is the job url which is constructed in the `get_url_from_job_dict`
+method.
+
+{% highlight python %}
+def get_url_from_job_dict(self, job_dict):
+    a = self.get_soup_anchor_from_job_dict(job_dict)
+    u = urlparse.urljoin(self.br.geturl(), a['href'])
+    u = self.refine_url(u)
+    return u
+{% endhighlight %}
+
+We want the link to each job to have the following format. 
+
+`https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=357662`
+
+But note that url we extract from the JSON data has a lot of unnecessary parameters. 
+
+`jobdetails.aspx?SID=%5eEnlVV9o9EpB_slp_rhc_acR7YArHwQsgrzO5e8FYRi6rgQcr3e%2f1DKTvwIttnnGZdFDBpFzv&jobId=357662&type=search&JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=357662_5216&GQId=480`
+
+The only parameter we're interested in is `jobId`. We must refine the url down to our desired form.
+
+The `refine_url` method filters out all other parameters except `jobID` from the job url and 
+tacks on the `siteid` and `partnerid` parameters to get our final url form. 
+
+{% highlight python %}
+def refine_url(self, job_url):
+    """
+    """
+    items = urlutil.url_query_get(
+        self.url.lower(), 
+        ['partnerid', 'siteid']
+    )
+
+    url = urlutil.url_query_filter(job_url, 'jobId')
+    url = urlutil.url_query_add(url, items.iteritems())
+
+    return url
+{% endhighlight %}
+
+The method makes use of a helper module named `urlutil` contains the code for extracting, 
+filtering, and appending query parameters to urls. The code for that module is available
+[here](https://github.com/thayton/brassring/blob/master/urlutil.py).
+
+### Final Code
+
+That's it. Now let's try running it.
+
+{% highlight bash %}
+$ ./brighthorizons.py 
+{'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=64989', 'location': u'Racine, Wisconsin', 'title': u"Two's Teacher "}
+{'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65036', 'location': u'Deerfield & Northbrook, Illinois', 'title': u"Two's Teacher "}
+{'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65085', 'location': u'Ames, Iowa', 'title': u"Two's Teacher "}
+{'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65113', 'location': u'Des Moines, Iowa', 'title': u"Two's Teacher "}
+{'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65120', 'location': u'Iowa City, Iowa', 'title': u"Two's Teacher "}
+...
+{% endhighlight %}
+
+If you'd like to see a working version of the code developed in this post, it's available on github
+[here](https://github.com/thayton/brassring).
 
 ### Conclusion
 
