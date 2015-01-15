@@ -198,11 +198,13 @@ current response page:
 
 {% highlight python %}
 def soupify_form(self, soup, form_name):
-    #
-    # Some of script contents throw off mechanize
-    # and it gives error 'ParseError: OPTION outside of SELECT'
-    # So we soupify it to remove script contents
-    #
+    '''
+    Selecting a form with mechanize sometimes throws the error
+
+    'ParseError: OPTION outside of SELECT'
+
+    Running the form through BeautifulSoup seems to fix the issue
+    '''
     if not soup:
         soup = BeautifulSoup(self.br.response().read())
 
