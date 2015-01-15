@@ -33,7 +33,7 @@ Once you've submitted your search you'll end up at the search results page.
 The job search results in the above table are dynamically generated from JSON data in one of the form controls. 
 
 Specifically, the jobs come from a form named `frmResults` with a hidden input field named `ctl00$MainContent$GridFormatter$json_tabledata`. 
-The value attribute in this field contains the jobs in JSON format.
+The value attribute in this field contains the jobs.
 
 {% highlight html %}
 <form name="frmResults" method="post"  role="main">
@@ -47,7 +47,7 @@ The value attribute in this field contains the jobs in JSON format.
 </form>
 {% endhighlight %}
 
-The JSON data for one of the jobs from this field is shown below in table form for readability.
+Here's the JSON data for one of the jobs shown in table form for readability.
 
 <table>
   <thead>
@@ -123,11 +123,11 @@ The JSON data for one of the jobs from this field is shown below in table form f
 </table>
 
 From the above table we can see that the job title and url are retrieved using the `FORMTEXT13`
-key. The job's location (city and state) are retrieved using the `FORMTEXT12` and `FORMTEXT8` 
-keys respectively.
+key. The job's location (city and state) is retrieved using the `FORMTEXT12` and `FORMTEXT8` 
+keys.
 
-If we look back at the above screenshots, we can also see that the job search results are returned 
-50 records at a time. If want to get all of the jobs we'll need to be able to handle pagination.
+Notice also that there's at least ten pages of job results in the above screenshot. If want to get 
+all of the jobs, then we'll need to be able to handle pagination.
 
 Let's take stock of our requirements. In order to scrape jobs from this site we are going to have 
 to do the following:
@@ -248,8 +248,9 @@ def scrape_jobs(self):
 
 ### Pagination
 
-Records are returned 50 results at a time. In order to get all of the jobs we'll use
-a method named `goto_next_page` to iterate through each page and a method named `seen_all_jobs` 
+If we look back at the screenshots in the overview, we see that the job search results 
+are returned 50 records at a time. In order to get all of the jobs we'll use a method 
+named `goto_next_page` to iterate through each page and a method named `seen_all_jobs` 
 to determine once we've reached the last page.
 
 If we click on the `Next` link from the first page and inspect the network data we see the 
