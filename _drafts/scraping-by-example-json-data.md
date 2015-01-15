@@ -397,14 +397,16 @@ We want the link to each job to have the following format.
 
 `https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=357662`
 
-But note that url we extract from the JSON data has a lot of unnecessary parameters. 
+But the url we extract from the JSON data has a lot of unnecessary parameters. 
 
-`jobdetails.aspx?SID=%5eEnlVV9o9EpB_slp_rhc_acR7YArHwQsgrzO5e8FYRi6rgQcr3e%2f1DKTvwIttnnGZdFDBpFzv&jobId=357662&type=search&JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=357662_5216&GQId=480`
+`jobdetails.aspx?SID=%5eEnlVV9o9EpB...&jobId=357662&type=search&
+    JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=357662_5216&
+    GQId=480`
 
 The only parameter we're interested in is `jobId`. We must trim the url down to our desired form.
 
-The `refine_url` method filters out all other parameters except `jobID` from the job url and 
-tacks on the `siteid` and `partnerid` parameters to get our final url. 
+The `refine_url` method filters out all other parameters except `jobID` and tacks on the `siteid` 
+and `partnerid` parameters to get our final result.
 
 {% highlight python %}
 def refine_url(self, job_url):
@@ -421,9 +423,8 @@ def refine_url(self, job_url):
     return url
 {% endhighlight %}
 
-The method makes use of a helper module named `urlutil` contains the code for extracting, 
-filtering, and appending query parameters to urls. The code for that module is available
-[here](https://github.com/thayton/brassring/blob/master/urlutil.py).
+The method makes use of a helper module named [urlutil](https://github.com/thayton/brassring/blob/master/urlutil.py)
+that contains the code for extracting, filtering, and appending query parameters to urls. 
 
 ### Final Code
 
