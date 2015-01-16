@@ -10,12 +10,12 @@ relative_permalinks: true
 title:            'Todd Hayton'
 tagline:          'Freelance Software Developer'
 description:      'Freelance Software Developer'
-url:              http://www.toddhayton.com
+url:              http://toddhayton.com
 baseurl:          /
 
 author:
-  name:           'Mark Otto'
-  url:            https://twitter.com/mdo
+  name:           'Todd Hayton'
+  url:            http://toddhayton.com
 
 paginate:         5
 
@@ -23,4 +23,7 @@ paginate:         5
 version:          2.1.0
 
 github:
-  repo:           https://github.com/poole/hyde
+  repo:           https://github.com/thayton
+
+gems:
+  - jekyll-sitemap
