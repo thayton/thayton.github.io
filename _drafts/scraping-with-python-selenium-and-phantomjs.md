@@ -65,7 +65,14 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
-After opening the jobs page with `driver.get()`, we'll feed the `page_source` into BeautifulSoup.
+We'll open the page with `driver.get()`. After `get` returns, we'll feed the rendered HTML in
+`driver.page_source` into BeautifulSoup. Then we match against the job link's `href` attribute.
+For each job link we'll extract the title, url, and location.
+
+To get all of the jobs, we'll also need to handle pagination. There's a pager at bottom of the 
+jobs listing. A user can click a page number or the `Next` link to navigate through the listings.
+We'll use the next link to iterate through every page of the results.
+
 
 [locating elements](http://selenium-python.readthedocs.org/en/latest/locating-elements.html)
 
