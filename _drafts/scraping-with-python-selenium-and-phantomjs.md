@@ -3,7 +3,42 @@ layout: post
 title: Scraping with Python Selenium and PhantomJS
 ---
 
-Scraping with Python Selenium and PhantomJS
+In previous posts, I covered scraping using mechanize as the browser. Sometimes though 
+a site uses so much Javascript to dynamically render its pages that using a tool like 
+mechanize (which can't handle Javascript) isn't really feasable. For these cases, we have
+to use a browser that can run the Javascript required to generate the pages. 
+
+[PhantomJS](http://phantomjs.org/) is a headless (non-gui) browser. [Selenium](http://www.seleniumhq.org/) 
+ is a tool for automating browsers. In this post, we'll use the two together to scrape 
+a Javascript heavy site. First we'll navigate to the site and then, after the HTML has 
+been dynamically generated, we'll feed it into BeautifulSoup for parsing.
+
+First let's set up our environment by installing PhantomJS along with the Selenium bindings 
+for Python:
+
+{% highlight bash %}
+$ mkdir scraper && cd scraper
+$ brew install phantomjs
+$ virtualenv venv
+$ source venv/bin/activate
+$ pip install selenium
+{% endhighlight %}
+
+Now, let's look at the site we'll use for our example, the job search page for the company
+[L-3 Klein Associates](http://www.l-3com.com/careers/us-job-search.html). They use the Taleo Applicant
+Tracking System and the pages are almost entirely generated via Javascript:
+
+[https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl](https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl)
+
+In this post, we'll develop a script that can scrape, and then print out, all of the jobs listed on 
+their Applicant Tracking System. 
+
+Let's get started. 
+
+First, let's sketch out our class, `TaleoJobScraper`. In the constructor
+we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`. In it, we'll
+call another method `scrape_job_links` to interate through the job listings, after which we'll
+call `driver.quit()` once we're finished:
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -23,13 +58,14 @@ class TaleoJobScraper(object):
 
     def scrape(self):
         jobs = self.scrape_job_links()
-        self.scrape_job_descriptions(jobs)
         self.driver.quit()
 
 if __name__ == '__main__':
     scraper = TaleoJobScraper()
     scraper.scrape()
 {% endhighlight %}
+
+After opening the jobs page with `driver.get()`, we'll feed the `page_source` into BeautifulSoup.
 
 [locating elements](http://selenium-python.readthedocs.org/en/latest/locating-elements.html)
 
@@ -65,18 +101,5 @@ def scrape_job_links(self):
             break
 
     return jobs
-{% endhighlight %}
-
-{% highlight python %}
-def scrape_job_descriptions(self, jobs):
-    for job in jobs:
-        self.driver.get(job['url'])            
-
-        s = BeautifulSoup(self.driver.page_source)
-        x = {'class': 'mastercontentpanel3'}
-        d = s.find('div', attrs=x)
-
-        job['desc'] = ' '.join(d.findAll(text=True))
-        sleep(.75)
 {% endhighlight %}
 
