@@ -8,6 +8,8 @@ a site uses so much Javascript to dynamically render its pages that using a tool
 mechanize (which can't handle Javascript) isn't really feasable. For these cases, we have
 to use a browser that can run the Javascript required to generate the pages. 
 
+## Overview
+
 [PhantomJS](http://phantomjs.org/) is a headless (non-gui) browser. [Selenium](http://www.seleniumhq.org/) 
  is a tool for automating browsers. In this post, we'll use the two together to scrape 
 a Javascript heavy site. First we'll navigate to the site and then, after the HTML has 
@@ -34,6 +36,8 @@ In this post, we'll develop a script that can scrape, and then print out, all of
 their Applicant Tracking System. 
 
 Let's get started. 
+
+## Implementation
 
 First, let's sketch out our class, `TaleoJobScraper`. In the constructor
 we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`. In it, we'll
@@ -65,16 +69,6 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
-We'll open the page with `driver.get()`. After `get` returns, we'll feed the rendered HTML in
-`driver.page_source` into BeautifulSoup. Then we match against the job link's `href` attribute.
-For each job link we'll extract the title, url, and location.
-
-To get all of the jobs, we'll also need to handle pagination. There's a pager at bottom of the 
-jobs listing. A user can click a page number or the `Next` link to navigate through the listings.
-We'll use the next link to iterate through every page of the results.
-
-
-[locating elements](http://selenium-python.readthedocs.org/en/latest/locating-elements.html)
 
 {% highlight python %}
 def scrape_job_links(self):
@@ -109,4 +103,28 @@ def scrape_job_links(self):
 
     return jobs
 {% endhighlight %}
+
+We open the page with `driver.get()`. After `get()` returns, we feed the rendered HTML in
+`driver.page_source` into BeautifulSoup. Then we match against the `href` attribute of the 
+job links. For each job link we extract the title, url, and location.
+
+To get all of the jobs, we also need to handle pagination. There's a pager at bottom of the 
+jobs listing. A user can click a page number or the `Next` link to navigate through the listings.
+We use the 'Next` link to iterate through every page of the results by first finding link using 
+the driver's `find_element_by_id` method and then calling `click()` if we're not on the last page.
+
+To determine if we're on the last page we search for a link whose text equals the current page 
+number plus one. If no such link exists then we've reached the last page of results and break.
+
+[locating elements](http://selenium-python.readthedocs.org/en/latest/locating-elements.html)
+
+If you'd like to see a working version of the code developed in this post, it's available on 
+github [here](https://github.com/thayton/taleo_job_scraper).
+
+## Conclusion
+
+Have a small scraping task you'd like to get done for free?
+
+Email me the details and if I think it will make an instructive example I'll develop a solution for free in a future post.
+
 
