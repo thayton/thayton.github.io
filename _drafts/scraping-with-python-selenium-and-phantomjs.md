@@ -40,9 +40,9 @@ Let's get started.
 ## Implementation
 
 First, let's sketch out our class, `TaleoJobScraper`. In the constructor
-we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`. In it, we'll
-call another method `scrape_job_links` to interate through the job listings, after which we'll
-call `driver.quit()` once we're finished:
+we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`. It will call
+`scrape_job_links()` to interate through the job listings, and then call `driver.quit()` once
+it's complete.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -69,6 +69,8 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
+Now let's take a look at the `scrape_job_links()` method, which is listed 
+next:
 
 {% highlight python %}
 def scrape_job_links(self):
@@ -110,7 +112,7 @@ job links. For each job link we extract the title, url, and location.
 
 To get all of the jobs, we also need to handle pagination. There's a pager at bottom of the 
 jobs listing. A user can click a page number or the `Next` link to navigate through the listings.
-We use the 'Next` link to iterate through every page of the results by first finding link using 
+We use the `Next` link to iterate through every page of the results by first finding link using 
 the driver's `find_element_by_id` method and then calling `click()` if we're not on the last page.
 
 To determine if we're on the last page we search for a link whose text equals the current page 
