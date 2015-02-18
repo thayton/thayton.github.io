@@ -124,4 +124,8 @@ $ chmod +x scraper.py
 $ ./scraper.py
 {% endhighlight %}
 
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. My [Contact information](/contact) 
+is available in the sidebar.
 
