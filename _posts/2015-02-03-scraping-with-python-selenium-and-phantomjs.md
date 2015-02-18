@@ -140,12 +140,6 @@ number plus one. If no such link exists then we've reached the last page of resu
 If you'd like to see a working version of the code developed in this post, it's available on 
 github [here](https://github.com/thayton/taleo_job_scraper).
 
-## Conclusion
-
-Have a small scraping task you'd like to get done for free?
-
-[Email me](/contact) the details and if I think it will make an instructive example I'll develop a solution for free in a future post.
-
 ## Shameless Plug
 
 Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
