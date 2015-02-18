@@ -279,3 +279,8 @@ If you'd like to see a working version of the code in its final form, it's avail
 Have a small scraping task you'd like to get done for free? 
 
 Email me the details and if I think it will make an instructive example I'll develop a solution for free in a future post.
+
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+with some details about your project and I'll give you a quote.

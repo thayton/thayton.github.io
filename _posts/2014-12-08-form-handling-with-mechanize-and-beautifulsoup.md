@@ -360,3 +360,8 @@ the control by name (or predicate function) and then removing it:
 ctl = br.form.find_control('ctl00$cphMain$btnSearch')
 br.form.controls.remove(ctl)
 {% endhighlight %}
+
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+with some details about your project and I'll give you a quote.
