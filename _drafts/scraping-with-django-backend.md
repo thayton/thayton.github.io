@@ -9,7 +9,7 @@ Then, once the data has been collected, I view the results using the [automatic 
 interface](https://docs.djangoproject.com/en/1.7/intro/tutorial02/) which is easy to 
 setup in just a few lines of code.
 
-In this post, I'll show how to set up a template for scraping projects with Django. 
+In this post, I'll show how to set up a project template for scraping with Django. 
 
 First let's set up the environment. Create a directory for the template and start up a
 virtual environment in that directory.
@@ -38,7 +38,7 @@ $ cd scraper
 $ python manage.py startapp custom_scraper
 {% endhighlight %}
 
-In the top level directory, create a file named `scraper.py`. We'll edit that it in a 
+In the top level directory, create a file named scraper.py. We'll edit that it in a 
 second. 
 
 Your directory layout at this point should look as follows:
@@ -86,7 +86,7 @@ $ python manage.py makemigrations
 $ python manage.py migrate
 {% endhighlight %}
 
-Now in the top scraper directory edit the `scraper.py` file:
+Now in the top scraper directory edit the scraper.py file:
 
 {% highlight python %}
 #!/usr/bin/env python                                                                                                                                                                
@@ -115,10 +115,9 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
-The model(s) you created in models.py can be used in this standalone script for the data
-you scrape.
+The model(s) you define in custom_scraper/models.py can now be used in this standalone script.
 
-Now just make the script executable and you're all set up.
+Now just make the script executable and you're all set.
 
 {% highlight bash %}
 $ chmod +x scraper.py
