@@ -126,6 +126,6 @@ $ ./scraper.py
 
 ## Shameless Plug
 
-Have a scraping project you'd like done? I'm available for hire. My [Contact information](/contact) 
-is available in the sidebar.
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+with some details about your project and I'll give you a quote.
 
