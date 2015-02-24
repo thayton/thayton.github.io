@@ -40,7 +40,9 @@ Here's a summary of everything we'll need the script to do:
 ## Implementation
 
 We'll use [Mechanize](http://wwwsearch.sourceforge.net/mechanize/) to send our requests and 
-[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/) to parse the HTML.
+[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/) to parse the HTML. The script
+will take two arguments. One argument to specify the url of the advanced search page and the
+other to specify the search string.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -72,8 +74,8 @@ if __name__ == '__main__':
 A top level `scrape()` method encapsulates all of the logic.
 
 {% highlight python %}
-def scrape(self, q):
-   books = self.search_library_books(q=q)
+def scrape(self, url, q):
+   books = self.search_library_books(url=url, q=q)
    self.get_amazon_reviews(books)
    books = self.rank_by_reviews(books)
 
@@ -128,8 +130,7 @@ def search_library_books(self, url, q):
 {% endhighlight %}
 
 Note that we scrape the ISBN13 number and then convert it to ISBN10. That's because while the 
-Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [1][2] So
-ISBN10 is what we'll need in order to look up each book's rating on Amazon.
+Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [1][2] 
 
 ### ISBN13 to ISBN10 Conversion
 [Wikipedia](http://en.wikipedia.org/wiki/International_Standard_Book_Number#ISBN-10_check_digit_calculation) has a nice writeup
@@ -238,6 +239,9 @@ $ ./scraper.py -u https://mdpl.ent.sirsi.net/client/catalog/search/advanced -q j
 
 Each result from the library catalogue is printed out along with its Amazon rating, with the highest
 rated books listed first.
+
+If you'd like to see the full implementation, the source code for this article is available on 
+[github](https://github.com/thayton/library-amazon-reviews).
 
 ## Shameless Plug
 
