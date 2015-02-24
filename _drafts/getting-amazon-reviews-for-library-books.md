@@ -20,19 +20,14 @@ screenshot of their advanced search page:
 ![Search Image](/assets/sirsi/advanced_search.png)
 
 As you can see, searches can be filtered by format type (Electronic Resources, Sound Recording, Books, etc.) 
-For our purposes we only want books. Once you submit the search, you get a results page like the following:
+and language. For our purposes we only want English language books. Once you submit the search, you get a 
+results page like the following:
 
 ![Results Image](/assets/sirsi/search_results.png)
 
-The URL for searches limited to 'Books' has the following format:
-
-https://mdpl.ent.sirsi.net/client/catalog/search/results?qu=javascript&qf=FORMAT%09Format%09BOOK%09Books
-
-So, to query for a particular subject, we just need to set the `qu` parameter in the URL and then scrape 
-the results. Since results are sorted by relevance we'll limit our scrape to the first page of results. 
-
 What part of the results do we need to scrape? Well, we'd like the title obviously, and also the book's 
-ISBN number so we can look it up on Amazon to get its rating.
+ISBN number so we can look it up on Amazon to get its rating. Since results are sorted by relevance we'll 
+limit our scrape to the first page of results. 
 
 Here's a summary of everything we'll need the script to do:
 
@@ -44,7 +39,37 @@ Here's a summary of everything we'll need the script to do:
 
 ## Implementation
 
-A top level `scrape()` method encapsulates all of our logic.
+We'll use [Mechanize](http://wwwsearch.sourceforge.net/mechanize/) to send our requests and 
+[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/) to parse the HTML.
+
+{% highlight python %}
+#!/usr/bin/env python
+
+import re
+import argparse
+import mechanize
+from bs4 import BeautifulSoup
+
+AMAZON_URL = 'http://www.amazon.com/gp/product/'
+
+class Scraper(object):
+    def __init__(self):
+        self.br = mechanize.Browser()
+        self.br.set_handle_robots(False)
+        self.br.addheaders = [('User-agent', 
+                               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-u", "--url",   help="Url", required=True)
+    parser.add_argument("-q", "--query", help="Query", required=True)
+    args = parser.parse_args()
+
+    scraper = Scraper()
+    scraper.scrape(args.url, args.query)
+{% endhighlight %}
+
+A top level `scrape()` method encapsulates all of the logic.
 
 {% highlight python %}
 def scrape(self, q):
@@ -56,13 +81,14 @@ def scrape(self, q):
        print b['rating'], b['title']
 {% endhighlight %}
 
-### Scraping the Library Books
+### Scraping the Library Catalogue
 
-To scrape the book titles and ISBN numbers from the Sirsi catalogue, we filter based on the 
-`class` and `id` attributes of the elements containing the title and ISBN number. 
+To scrape the book titles and ISBN numbers from the Sirsi catalogue, we open up the advanced search page,
+fill out and submit the form. Then the search results are filtered based on the `class` and `id` attributes 
+of the elements containing the title and ISBN number. 
 
 {% highlight python %}
-def search_library_books(self, q):
+def search_library_books(self, url, q):
     '''
     Scrape the first page of books for the given query.
     Calculate the ISBN10 value for each book so we can 
@@ -70,7 +96,15 @@ def search_library_books(self, q):
     '''
     books = []
 
-    self.br.open(LIBRARY_URL.format(q))
+    def select_form(form):
+        return form.attrs.get('id', None) == 'advancedSearchForm'
+
+    self.br.open(url)
+    self.br.select_form(predicate=select_form)
+    self.br.form['allWordsField'] = q
+    self.br.form['formatTypeDropDown'] = ['BOOK']
+    self.br.form['languageDropDown'] = ['ENG']
+    self.br.submit()
 
     s = BeautifulSoup(self.br.response().read())
     x = {'class': 'isbnValue'}
@@ -93,10 +127,9 @@ def search_library_books(self, q):
     return books
 {% endhighlight %}
 
-### Amazon Page Links
-
 Note that we scrape the ISBN13 number and then convert it to ISBN10. That's because while the 
-Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [1][2]
+Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [1][2] So
+ISBN10 is what we'll need in order to look up each book's rating on Amazon.
 
 ### ISBN13 to ISBN10 Conversion
 [Wikipedia](http://en.wikipedia.org/wiki/International_Standard_Book_Number#ISBN-10_check_digit_calculation) has a nice writeup
@@ -182,6 +215,29 @@ def rank_by_reviews(self, books):
     newlist = sorted(books, key=lambda k: k['rating'], reverse=True) 
     return newlist
 {% endhighlight %}
+
+### Running It
+
+Let's try it out.
+
+{% highlight bash %}
+$ ./scraper.py -u https://mdpl.ent.sirsi.net/client/catalog/search/advanced -q javascript
+4.7 Beginning JavaScript / Paul Wilton.
+4.6 JavaScript : the definitive guide / David Flanagan.
+4.6 Professional JavaScript for Web developers / Nicholas C. Zakas.
+4.5 High performance JavaScript / Nicholas C. Zakas.
+4.5 JavaScript : the definitive guide / David Flanagan.
+4.3 PPK on JavaScript  / Peter-Paul Koch.
+4.1 Pure JavaScript / Jason Gilliam, Charlton Ting, R. Allen Wyke.
+4.0 JavaScript bible / Danny Goodman, Michael Morrison.
+4.0 JavaScript : a beginner's guide / John Pollock.
+3.7 JavaScript & Ajax for dummies / Andy Harris.
+3.5 Head first JavaScript / Michael Morrison.
+2.2 JavaScript for dummies / by Emily A. Vander Veer.
+{% endhighlight %}
+
+Each result from the library catalogue is printed out along with its Amazon rating, with the highest
+rated books listed first.
 
 ## Shameless Plug
 
