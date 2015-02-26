@@ -86,7 +86,7 @@ def scrape(self, url, q):
 ### Scraping the Library Catalogue
 
 To scrape the book titles and ISBN numbers from the Sirsi catalogue, we open up the advanced search page,
-fill out and submit the form. Then the search results are filtered based on the `class` and `id` attributes 
+fill out and submit the form. The search results are then filtered based on the `class` and `id` attributes 
 of the elements containing the title and ISBN number. 
 
 {% highlight python %}
@@ -130,7 +130,7 @@ def search_library_books(self, url, q):
 {% endhighlight %}
 
 Note that we scrape the ISBN13 number and then convert it to ISBN10. That's because while the 
-Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [1][2] 
+Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [[1]][amazon_linking] [[2]][amazon_isbnnum]
 
 ### ISBN13 to ISBN10 Conversion
 [Wikipedia](http://en.wikipedia.org/wiki/International_Standard_Book_Number#ISBN-10_check_digit_calculation) has a nice writeup
@@ -221,7 +221,7 @@ def rank_by_reviews(self, books):
 
 Let's try it out.
 
-{% highlight bash %}
+<pre>
 $ ./scraper.py -u https://mdpl.ent.sirsi.net/client/catalog/search/advanced -q javascript
 4.7 Beginning JavaScript / Paul Wilton.
 4.6 JavaScript : the definitive guide / David Flanagan.
@@ -235,7 +235,7 @@ $ ./scraper.py -u https://mdpl.ent.sirsi.net/client/catalog/search/advanced -q j
 3.7 JavaScript & Ajax for dummies / Andy Harris.
 3.5 Head first JavaScript / Michael Morrison.
 2.2 JavaScript for dummies / by Emily A. Vander Veer.
-{% endhighlight %}
+</pre>
 
 Each result from the library catalogue is printed out along with its Amazon rating, with the highest
 rated books listed first.
@@ -248,5 +248,5 @@ If you'd like to see the full implementation, the source code for this article i
 Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
 for a free quote.
 
-[1] http://www.newselfpublishing.com/AmazonLinking.html 
-[2] https://affiliate-program.amazon.com/gp/associates/help/t5/a16
+[amazon_linking]: http://www.newselfpublishing.com/AmazonLinking.html 
+[amazon_isbnnum]: https://affiliate-program.amazon.com/gp/associates/help/t5/a16
