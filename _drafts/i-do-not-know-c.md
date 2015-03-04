@@ -1,0 +1,1 @@
+http://kukuruku.co/hub/programming/i-do-not-know-c
