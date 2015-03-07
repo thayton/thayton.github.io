@@ -30,7 +30,7 @@ Now, let's look at the site we'll use for our example, the job search page for t
 [L-3 Klein Associates](http://www.l-3com.com/careers/us-job-search.html). They use the Taleo Applicant
 Tracking System and the pages are almost entirely generated via Javascript:
 
-[https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl](https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl)
+[https://l3com.taleo.net/careersection/l3\_ext\_us/jobsearch.ftl](https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl)
 
 In this post, we'll develop a script that can scrape, and then print out, all of the jobs listed on 
 their Applicant Tracking System. 
