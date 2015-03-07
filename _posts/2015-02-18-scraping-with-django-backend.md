@@ -78,7 +78,7 @@ INSTALLED_APPS = (
 )
 {% endhighlight %}
 
-Edit customer_scraper/models.py and create your model definitions. Then run migrate
+Edit custom_scraper/models.py and create your model definitions. Then run migrate
 to sync the models into the database.
 
 {% highlight bash %}
