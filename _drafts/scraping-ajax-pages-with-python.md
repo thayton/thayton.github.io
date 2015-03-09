@@ -159,8 +159,9 @@ Before we start with the code, let's summarize what we need our scraper to do:
 5. Increment `pageNumber` field of `searchRequestJson` dict.
 6. Go to step 3 to get the next page of results.
 
-Now let's write the code. First, we create a class named AppleJobScraper with a dict named `search_request` for building the
-`searchRequestJson` string.
+Now let's write the code. 
+
+First, we create a class named AppleJobScraper with a dict named `search_request` for building the `searchRequestJson` string.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -216,7 +217,7 @@ def scrape(self):
 
 The `scrape_jobs` method is where we implement the steps discussed earlier.
 
-{% highlight python lineno %}
+{% highlight python linenos %}
 def scrape_jobs(self, max_pages=3):
     jobs = []
     pageno = 0
@@ -255,8 +256,36 @@ def scrape_jobs(self, max_pages=3):
     return jobs
 {% endhighlight %}
 
+On line 4 we initialize `pageNumber` to 0 to get the first page of jobs.
+
+Then on lines 7-10 we create a dict for the parameters we'll be sending in the POST request and 
+convert `search_request` into a JSON string using `json.dumps` in the process. 
+
+Next on lines 12-18 we send the POST request. I've included the headers argument to show how you can control what 
+headers are sent in your request but it's not necessary in this case to make the request work. 
+
+Once we've sent the POST request, we parse our response using BeautifulSoup and extract the desired fields. 
+
+On lines 33-34 we increment the page and then repeat our previous steps until we've gotten `max_pages` (by default 3) worth of results.
+
+Let's try it out by instantiating the scraper and calling `scrape()`.
+
 {% highlight python %}
 if __name__ == '__main__':
     scraper = AppleJobsScraper()
     scraper.scrape()
+{% endhighlight %}
+
+{% highlight bash %}
+$ ./scraper.py | head
+{'title': u'US-Business Leader', 'location': u'Various', 'jobid': u'USABL'}
+{'title': u'US-Business Manager', 'location': u'Various', 'jobid': u'USABM'}
+{'title': u'US-Business Specialist', 'location': u'Various', 'jobid': u'USABS'}
+{'title': u'US-Apple Store Leader Program', 'location': u'Various', 'jobid': u'USALP'}
+{'title': u'US-Creative', 'location': u'Various', 'jobid': u'USACR'}
+{'title': u'US-Expert', 'location': u'Various', 'jobid': u'USAEX'}
+{'title': u'US-Inventory Specialist', 'location': u'Various', 'jobid': u'USAIS'}
+{'title': u'US-Manager', 'location': u'Various', 'jobid': u'USAMN'}
+{'title': u'US-Market Leader', 'location': u'Various', 'jobid': u'USAML'}
+{'title': u'US-Genius', 'location': u'Various', 'jobid': u'USAGN'}
 {% endhighlight %}
