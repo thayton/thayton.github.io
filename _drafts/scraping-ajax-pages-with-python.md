@@ -3,13 +3,21 @@ layout: post
 title: Scraping AJAX Pages with Python
 ---
 
-Scraping AJAX Pages with Python.
+In this post I'll show an example of how to scrape AJAX Pages with Python.
 
-For this scraper, we'll use [Requests](http://docs.python-requests.org/en/latest/) and 
-[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/). The instructions assume you are using the Chrome
+Scraping AJAX pages involves more than just manually reviewing the HTML of the page you want to scrape. That's because 
+an AJAX page uses javascript to make a server request for data that is then dynamically rendered into the current page. 
+
+It follows then that to scrape the data being rendered you have to determine the format and endpoint of request being 
+made so that you can replicate the request, and the format of the response so that you can parse it.
+
+The AJAX page that I'll show how to scrape in this post is the 
+<a href="https://jobs.apple.com/us/search" target="_blank">jobs page</a> for 
+<a href="http://www.apple.com" target="_blank">Apple.com</a>.
+
+The scraper I develop in this post uses [Requests](http://docs.python-requests.org/en/latest/) and 
+[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/). I also assume you are using the Chrome
 browser on OSX. For those using other browsers/OS combinations, the concepts remains the same.
-
-For this example, we'll use the jobs page for Apple.com 
 
 Open the page <a href="https://jobs.apple.com/us/search" target="_blank">https://jobs.apple.com/us/search</a>.
 Scroll down a bit and you'll see a jobs listing like the following.
@@ -20,12 +28,12 @@ Open the Chrome developer tools by selecting View > Developer > Developer Tools
 
 ![Developer Tools](/assets/scraping-ajax-pages-with-python/developer_tools.png)
 
-Your browser screen should split with the developer tools window appearing in the bottom half. Select the 
+Your browser screen should split in two with the developer tools window appearing in the bottom half. Select the 
 Network tab.
 
 ![Split Screen](/assets/scraping-ajax-pages-with-python/split_screen.png)
 
-Refresh the page. You should see Network tab fill up with the network requests being made for the Apple jobs page. 
+Refresh the page. You should see Network tab fill up with the HTTP requests being made for the Apple jobs page. 
 Scroll down until you see the POST request to search-result.
 
 ![Search Result Line](/assets/scraping-ajax-pages-with-python/search_result_line.png)
@@ -38,9 +46,12 @@ Under the headers tab, scroll down until you see the Form Data.
 
 [![Request](/assets/scraping-ajax-pages-with-python/request.png)](/assets/scraping-ajax-pages-with-python/request.png)
 
-There are two parameters, `searchRequestJson` and `clientOffset`. The `searchRequestionJson` is a JSON string whose 
-`pageNumber` field controls which page of results is returned for a request. Here's a formatted listing of the 
-`searchRequestJson` fields.
+This is the AJAX request that retrieves the jobs that are rendered on the page. So to scrape jobs from this page, we need
+to replicate this request. Let's look at the details of this request.
+
+There are two parameters, `searchRequestJson` and `clientOffset`. We'll send both parameters in our request. The `searchRequestionJson` 
+parmater is a JSON string whose `pageNumber` field controls which page of results is returned for a request. So that field will get 
+incremented for each page we retrieve. Here's a formatted listing of the `searchRequestJson` fields.
 
 {% highlight json %}
 {  
@@ -79,7 +90,7 @@ There are two parameters, `searchRequestJson` and `clientOffset`. The `searchReq
 }
 {% endhighlight %}
 
-Here's the equivalent Python dictionary.
+Here's the equivalent Python dictionary. We'll convert this dict into a JSON string when we send our requests.
 
 {% highlight python %}
 {
@@ -116,7 +127,7 @@ Here's the equivalent Python dictionary.
 }
 {% endhighlight %}
 
-Now click on the Response tab to see how jobs are returned for a query.
+Next click on the Response tab to see how jobs are returned for a query.
 
 ![Response Tab](/assets/scraping-ajax-pages-with-python/response_tab.png)
 
@@ -149,19 +160,19 @@ get a listing like the following.
 
 For our scraper, we'll extract the job title, ID, and location for each job in the listing.
 
-Before we start with the code, let's summarize what we need our scraper to do:
+Before we get started with the code, let's summarize what we need our scraper to do:
 
 1. Construct the `searchRequestJson` dictionary. 
 2. Initialize `searchRequestJson['pageNumber']` to 0. 
-2. Convert the `searchRequestJson` dict to a JSON string
+2. Convert the `searchRequestJson` dict into a JSON string
 3. Send a POST request to `https://jobs.apple.com/us/search/search-result` with `searchRequestJson` and `clientOffset` parameters.
 4. Parse the XML response with BeautifulSoup and extract the job title, id, and location for each job.
-5. Increment `pageNumber` field of `searchRequestJson` dict.
+5. Increment the `pageNumber` field of the `searchRequestJson` dict.
 6. Go to step 3 to get the next page of results.
 
 Now let's write the code. 
 
-First, we create a class named AppleJobScraper with a dict named `search_request` for building the `searchRequestJson` string.
+First, we create a class named `AppleJobsScraper` with a dict named `search_request` for building the `searchRequestJson` string.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -205,8 +216,8 @@ class AppleJobsScraper(object):
         }
 {% endhighlight %}
 
-Next, we'll create a method named `scrape` which will call `scrape_jobs` to scrape the jobs
-and print out the results.
+Next, we'll add a method named `scrape`. It will call `scrape_jobs` and print out
+the list of jobs returned.
 
 {% highlight python %}
 def scrape(self):
@@ -258,13 +269,13 @@ def scrape_jobs(self, max_pages=3):
 
 On line 4 we initialize `pageNumber` to 0 to get the first page of jobs.
 
-Then on lines 7-10 we create a dict for the parameters we'll be sending in the POST request and 
+Then on lines 7-10 we create a dict for the parameters we'll be sending in the POST request. We
 convert `search_request` into a JSON string using `json.dumps` in the process. 
 
 Next on lines 12-18 we send the POST request. I've included the headers argument to show how you can control what 
 headers are sent in your request but it's not necessary in this case to make the request work. 
 
-Once we've sent the POST request, we parse our response using BeautifulSoup and extract the desired fields. 
+After we've sent the request, we parse our response using BeautifulSoup and extract the desired fields. 
 
 On lines 33-34 we increment the page and then repeat our previous steps until we've gotten `max_pages` (by default 3) worth of results.
 
@@ -275,6 +286,8 @@ if __name__ == '__main__':
     scraper = AppleJobsScraper()
     scraper.scrape()
 {% endhighlight %}
+
+Now run it from the command line:
 
 {% highlight bash %}
 $ ./scraper.py | head
@@ -289,3 +302,11 @@ $ ./scraper.py | head
 {'title': u'US-Market Leader', 'location': u'Various', 'jobid': u'USAML'}
 {'title': u'US-Genius', 'location': u'Various', 'jobid': u'USAGN'}
 {% endhighlight %}
+
+If you'd like to see the full implementation, the source code for this article is available on 
+[github](https://github.com/thayton/apple-job-scraper).
+
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+for a free quote.
