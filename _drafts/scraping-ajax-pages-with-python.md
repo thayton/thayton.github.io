@@ -3,7 +3,7 @@ layout: post
 title: Scraping AJAX Pages with Python
 ---
 
-In this post I'll show an example of how to scrape AJAX Pages with Python.
+In this post I'll show an example of how to scrape AJAX pages with Python.
 
 Scraping AJAX pages involves more than just manually reviewing the HTML of the page you want to scrape. That's because 
 an AJAX page uses javascript to make a server request for data that is then dynamically rendered into the current page. 
@@ -49,9 +49,8 @@ Under the headers tab, scroll down until you see the Form Data.
 This is the AJAX request that retrieves the jobs that are rendered on the page. So to scrape jobs from this page, we need
 to replicate this request. Let's look at the details of this request.
 
-There are two parameters, `searchRequestJson` and `clientOffset`. We'll send both parameters in our request. The `searchRequestionJson` 
-parmater is a JSON string whose `pageNumber` field controls which page of results is returned for a request. So that field will get 
-incremented for each page we retrieve. Here's a formatted listing of the `searchRequestJson` fields.
+There are two parameters: `searchRequestJson` and `clientOffset`. We'll send both in our request. The `clientOffset`
+parameter is simple. It's just set to -300. The `searchRequestJson` field is more complex. Here's a formatted listing. 
 
 {% highlight json %}
 {  
@@ -89,6 +88,9 @@ incremented for each page we retrieve. Here's a formatted listing of the `search
    "requisitionIds":null
 }
 {% endhighlight %}
+
+The `searchRequestionJson` parmater is a JSON string whose `pageNumber` field controls which page of results 
+is returned for a request. That field will get incremented for each page we retrieve. 
 
 Here's the equivalent Python dictionary. We'll convert this dict into a JSON string when we send our requests.
 
