@@ -5,10 +5,12 @@ title: Scraping AJAX Pages with Python
 
 In this post I'll show an example of how to scrape AJAX pages with Python.
 
+## Overview
+
 Scraping AJAX pages involves more than just manually reviewing the HTML of the page you want to scrape. That's because 
 an AJAX page uses javascript to make a server request for data that is then dynamically rendered into the current page. 
 
-It follows then that to scrape the data being rendered you have to determine the format and endpoint of request being 
+It follows then that to scrape the data being rendered you have to determine the format and endpoint of the request being 
 made so that you can replicate the request, and the format of the response so that you can parse it.
 
 The AJAX page that I'll show how to scrape in this post is the 
@@ -16,9 +18,10 @@ The AJAX page that I'll show how to scrape in this post is the
 <a href="http://www.apple.com" target="_blank">Apple.com</a>.
 
 The scraper I develop in this post uses [Requests](http://docs.python-requests.org/en/latest/) and 
-[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/). I also assume you are using the Chrome
+[BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/). I assume you are using the Chrome
 browser on OSX. For those using other browsers/OS combinations, the concepts remains the same.
 
+## Finding the AJAX Request
 Open the page <a href="https://jobs.apple.com/us/search" target="_blank">https://jobs.apple.com/us/search</a>.
 Scroll down a bit and you'll see a jobs listing like the following.
 
@@ -129,6 +132,8 @@ Here's the equivalent Python dictionary. We'll convert this dict into a JSON str
 }
 {% endhighlight %}
 
+# Response Format
+
 Next click on the Response tab to see how jobs are returned for a query.
 
 ![Response Tab](/assets/scraping-ajax-pages-with-python/response_tab.png)
@@ -162,7 +167,10 @@ get a listing like the following.
 
 For our scraper, we'll extract the job title, ID, and location for each job in the listing.
 
+## Implementing the Scraper
+
 Before we get started with the code, let's summarize what we need our scraper to do:
+<a name="steps"></a>
 
 1. Construct the `searchRequestJson` dictionary. 
 2. Initialize `searchRequestJson['pageNumber']` to 0. 
@@ -174,7 +182,7 @@ Before we get started with the code, let's summarize what we need our scraper to
 
 Now let's write the code. 
 
-First, we create a class named `AppleJobsScraper` with a dict named `search_request` for building the `searchRequestJson` string.
+First, create a class named `AppleJobsScraper` with a dict named `search_request` for building the `searchRequestJson` string.
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -218,7 +226,7 @@ class AppleJobsScraper(object):
         }
 {% endhighlight %}
 
-Next, we'll add a method named `scrape`. It will call `scrape_jobs` and print out
+Next, add a method named `scrape`. It will call `scrape_jobs` and print out
 the list of jobs returned.
 
 {% highlight python %}
@@ -228,7 +236,7 @@ def scrape(self):
         print job
 {% endhighlight %}
 
-The `scrape_jobs` method is where we implement the steps discussed earlier.
+The `scrape_jobs` method is where we implement the [steps](#steps) discussed earlier.
 
 {% highlight python linenos %}
 def scrape_jobs(self, max_pages=3):
