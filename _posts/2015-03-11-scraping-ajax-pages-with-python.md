@@ -169,7 +169,8 @@ For our scraper, we'll extract the job title, ID, and location for each job in t
 
 ## Implementing the Scraper
 
-Before we get started with the code, let's summarize what we need our scraper to do:
+We have enough information now to write our scraper. Before we get started with the code, let's 
+summarize what we need our scraper to do: 
 <a name="steps"></a>
 
 1. Construct the `searchRequestJson` dictionary. 
@@ -283,7 +284,7 @@ Then on lines 7-10 we create a dict for the parameters we'll be sending in the P
 convert `search_request` into a JSON string using `json.dumps` in the process. 
 
 Next on lines 12-18 we send the POST request. I've included the headers argument to show how you can control what 
-headers are sent in your request but it's not necessary in this case to make the request work. 
+headers are sent in your request, but it's not necessary in this case to make the request work. 
 
 After we've sent the request, we parse our response using BeautifulSoup and extract the desired fields. 
 
