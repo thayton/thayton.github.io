@@ -16,9 +16,19 @@ Click the link and you'll see a job listing like the following:
 
 ![Job Link](/assets/scraping-with-casperjs/joblink.png)
 
+We're going to scrape the job title, url, and location for the first three pages of jobs listed.
+
+Let's get started with some code. 
+
 The jobs are listed inside a table whose `id` attribute is set to `jobs`:
 
 ![Jobs table](/assets/scraping-with-casperjs/jobstable.png)
+
+We'll wait for this table to be rendered before we start scraping jobs.
+
+In the following listing, we create a Casper instance and have it open the jobs page. It then waits for the jobs table to load by calling
+`waitForSelector()`. Once the table has loaded, we call `processPage()`. If the table does not load before the default 
+timeout occurs, the script exits by calling `terminate()`.
 
 {% highlight javascript %}
 /**
