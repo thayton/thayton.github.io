@@ -101,11 +101,18 @@ function getJobs() {
 }
 {% endhighlight %}
 
-
-
+Now let's look at handling the pagination. The pager at the bottom of the listing has a list
+of page number links for choosing a specific page and a Next link for iterating to the page
+subsequent to the currently selected page.
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
+
+The page we are currently on has it's link disabled.
+
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
+
+We can get the currently selected page for looking for the disabled pager link and returning
+its integer value.
 
 {% highlight javascript %}
 // Return the current page by looking for the disabled page number link in the pager
@@ -114,3 +121,7 @@ function getSelectedPage() {
     return parseInt(el.textContent);
 }
 {% endhighlight %}
+
+Once we have this value we can determine if the next page has been loaded by waiting for the
+disabled page number link in the pager to match `currentPage`. Once it has, we can start scraping
+the jobs table knowing it has been loaded with the next page of jobs.
