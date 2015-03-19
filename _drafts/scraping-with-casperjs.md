@@ -111,17 +111,40 @@ function getJobs() {
 }
 {% endhighlight %}
 
-Now let's look at handling the pagination. The pager at the bottom of the listing has a list
-of page number links for choosing a specific page and a Next link for iterating to the page
-subsequent to the currently selected page.
+Now let's look at handling the pagination. We'll get to the next page of jobs by clicking the Next 
+link in the pager.
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
-The page we are currently on has it's link disabled.
+If you inspect the Next link, you see it can be selected using the CSS selector `div#jobPager a#next`:
+
+![Next link CSS](/assets/scraping-with-casperjs/nextlink_css.png)
+
+We'll use Casper's `thenClick()` function to click the Next link and then use `waitFor()` to determine
+once the next page of jobs has loaded.
+
+{% highlight javascript %}
+currentPage++;
+
+this.thenClick("div#jobPager a#next").then(function() {
+    this.waitFor(function() {
+        return currentPage === this.evaluate(getSelectedPage);
+    }, processPage, terminate);
+});
+{% endhighlight %}
+
+So how do know when the next page of results has loaded? Let's go back and look at the pager again.
+Notice that the page we are currently on has it's link disabled. In the image below page 2 is currently
+being displayed.
+
+![Pager Image](/assets/scraping-with-casperjs/pager.png)
+
+The underlying HTML shows that the CSS class `navigation-link-disabled` can be used to identify which 
+page number link is disabled (and therefore the current page).
 
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
 
-We can get the currently selected page for looking for the disabled pager link and returning
+So we can get the currently selected page for looking for the disabled pager link and returning
 its integer value.
 
 {% highlight javascript %}
