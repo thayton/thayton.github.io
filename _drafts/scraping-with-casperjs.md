@@ -20,14 +20,15 @@ We're going to scrape the job title, url, and location for the first three pages
 
 Let's get started with some code. 
 
-The jobs are listed inside a table whose `id` attribute is set to `jobs`:
+First, inspect the jobs listing and you'll see that the jobs are listed inside a table whose `id` 
+attribute is set to `jobs`. That means the table can be identified with the CSS selector `table#jobs`.
 
 ![Jobs table](/assets/scraping-with-casperjs/jobstable.png)
 
 We'll wait for this table to be rendered before we start scraping jobs.
 
-In the following listing, we create a Casper instance and have it open the jobs page. It then waits for the jobs table to load by calling
-`waitForSelector()`. Once the table has loaded, we call `processPage()`. If the table does not load before the default 
+In the following listing, we create a Casper instance and have it open the jobs page. Then we wait for the jobs table to load by 
+calling `waitForSelector()`. Once the table has loaded, we call `processPage()`. If the table does not load before the default 
 timeout occurs, the script exits by calling `terminate()`.
 
 {% highlight javascript %}
@@ -56,11 +57,13 @@ casper.waitForSelector('table#jobs', processPage, terminate);
 casper.run();
 {% endhighlight %}
 
-Our `processPage` function will have three parts:
+The `processPage` function is where the bulk of our work occurs. It has three parts:
 
 1. Scrape and print the jobs in the jobs table
 2. Exit if we're finished scraping
 3. Else, click the Next link and wait for the next page of jobs to load
+
+We'll go over each part in turn. But first, here's the listing:
 
 {% highlight javascript %}
 var processPage = function() {
@@ -81,12 +84,15 @@ var processPage = function() {
 };
 {% endhighlight %}
 
-Each of the rows in this table has an `id` attribute that begins with the word job. 
+### Part 1: Scrape and print the jobs in the jobs table
+
+If we inspect the jobs table, we see that:
+
+* Each row in the table has an `id` attribute that begins with the string `job`
+* Job urls contains the string `jobdetail.ftl?job=`
+* A job's location is contained in a `span` element in the column after the one containing the job link
 
 [![Job Link CSS](/assets/scraping-with-casperjs/joblink_css.png)](/assets/scraping-with-casperjs/joblink_css.png)
-
-Within each row is the url for the job. The url contains the string `jobdetail.ftl?job=`. The location for a job is 
-contained within a `span` element in the column after the one containing the job link.
 
 Based on the above attributes, we have all the information we need extract the title, url, and location for each
 job in the table.
@@ -111,8 +117,21 @@ function getJobs() {
 }
 {% endhighlight %}
 
-Now let's look at handling the pagination. We'll get to the next page of jobs by clicking the Next 
-link in the pager.
+### Part 2: Exit if we're finished scraping
+
+We stop scraping once we've scraped three pages worth of results or we encounter a page
+with no jobs table, whichever comes first.
+
+{% highlight javascript %}
+if (currentPage >= 3 || !this.exists("table#jobs")) {
+    return terminate.call(casper);
+}
+{% endhighlight %}
+
+### Part 3: Click the Next link and wait for the next page of jobs to load
+
+Finally, let's look at pagination. In the pager at the bottom of the jobs listing there's
+a `Next` link. We'll click on that link to get the next page of results.
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
@@ -134,18 +153,16 @@ this.thenClick("div#jobPager a#next").then(function() {
 {% endhighlight %}
 
 So how do know when the next page of results has loaded? Let's go back and look at the pager again.
-Notice that the page we are currently on has it's link disabled. In the image below page 2 is currently
-being displayed.
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
-The underlying HTML shows that the CSS class `navigation-link-disabled` can be used to identify which 
-page number link is disabled (and therefore the current page).
+Note that the page we are currently on has it's link disabled. In the image above, that's the page two
+link. If we inspect this link, we see that it uses the CSS class `navigation-link-disabled`:
 
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
 
-So we can get the currently selected page for looking for the disabled pager link and returning
-its integer value.
+This means we can write a `getSelectedPage` function to return the currently selected page by identifying
+the link with the `navigation-link-disabled` class and returning its value as an integer.
 
 {% highlight javascript %}
 // Return the current page by looking for the disabled page number link in the pager
@@ -155,6 +172,19 @@ function getSelectedPage() {
 }
 {% endhighlight %}
 
-Once we have this value we can determine if the next page has been loaded by waiting for the
-disabled page number link in the pager to match `currentPage`. Once it has, we can start scraping
-the jobs table knowing it has been loaded with the next page of jobs.
+To determine when the next page has finished loading, we click the Next link and then wait for 
+the value returned by `getSelectedPage` link to become equal to `currentPage`. Hence the comparison,
+
+{% highlight javascript %}
+return currentPage === this.evaluate(getSelectedPage);
+{% endhighlight %}
+
+Once these two values are the same, we can start scraping the jobs table knowing it has been updated 
+with the next page of jobs.
+
+Here's the entire listing:
+
+If you'd like to see a working implementation of the code, it's available on github here.
+
+For comparison purposes, the Python/Selenium implementation I developed in a previous post is available
+here.
