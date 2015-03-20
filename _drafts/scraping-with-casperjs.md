@@ -165,12 +165,12 @@ So how do know when the next page of results has loaded? Let's go back and look 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
 Note that the page we are currently on has it's link disabled. In the image above, it's the page 2
-link. If we inspect this link, we see that it uses the CSS class `navigation-link-disabled`:
+link. If we inspect this link, we see that it's a list element with the CSS class `navigation-link-disabled`:
 
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
 
-This means we can write a `getSelectedPage()` function to return the currently selected page by finding
-the link with the `navigation-link-disabled` class and returning its value as an integer.
+This means that we can write a `getSelectedPage()` function to find the currently selected page using the class 
+selector `li[class="navigation-link-disabled"]` and then returning that list element's value as an integer.
 
 {% highlight javascript %}
 // Return the current page by looking for the disabled page number link in the pager
@@ -180,7 +180,7 @@ function getSelectedPage() {
 }
 {% endhighlight %}
 
-Now let's put this all together. We can determine when the next page has finished loading by clicking on the 
+Now let's put this all together: we can determine when the next page has finished loading by clicking on the 
 Next link and then waiting for the value returned by `getSelectedPage()` link to become equal to `currentPage`. 
 Hence the comparison,
 
@@ -227,5 +227,5 @@ Exiting..
 
 If you'd like to see a working implementation of the code, it's available on github [here](https://github.com/thayton/casperjs-taleo-job-scraper).
 
-For comparison purposes, the Python/Selenium implementation I developed in a previous post is available
-[here](https://github.com/thayton/taleo_job_scraper).
+For comparison purposes, the equivalent Python/Selenium implementation I developed in a 
+[previous post]({% post_url 2015-02-03-scraping-with-python-selenium-and-phantomjs %}) is available [here](https://github.com/thayton/taleo_job_scraper).
