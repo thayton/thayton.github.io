@@ -7,6 +7,8 @@ In a [previous post]({% post_url 2015-02-03-scraping-with-python-selenium-and-ph
 a Javascript-heavy site by using the [Selenium](http://selenium-python.readthedocs.org/) bindings for Python to drive a headless 
 browser ([PhantomJS](http://phantomjs.org/)). In this post, I'll show how to scrape the same site using [CasperJS](http://casperjs.org/).
 
+## Overview
+
 The site being scraped is the job search page for the company [L-3 Klein Associates](http://www.l-3com.com/careers/us-job-search.html). 
 They use the Taleo Applicant Tracking System and the pages are almost entirely generated via Javascript:
 
@@ -17,6 +19,8 @@ Click the link and you'll see a job listing like the following:
 ![Job Link](/assets/scraping-with-casperjs/joblink.png)
 
 We're going to scrape the job title, url, and location for the first three pages of jobs listed.
+
+## Implementation
 
 Let's get started with some code. 
 
@@ -57,7 +61,7 @@ casper.waitForSelector('table#jobs', processPage, terminate);
 casper.run();
 {% endhighlight %}
 
-The `processPage` function is where the bulk of our work occurs. It has three parts:
+The `processPage()` function is where the bulk of our work will occur. It has three parts:
 
 1. Scrape and print the jobs in the jobs table
 2. Exit if we're finished scraping
@@ -67,13 +71,17 @@ We'll go over each part in turn. But first, here's the listing:
 
 {% highlight javascript %}
 var processPage = function() {
+    // Part 1: Scrape and print the jobs in the jobs table
     jobs = this.evaluate(getJobs);
     require('utils').dump(jobs);
 
+    // Part 2: Exit if we're finished scraping
     if (currentPage >= 3 || !this.exists("table#jobs")) {
         return terminate.call(casper);
     }
 
+    // Part 3: Click the Next link and wait for the next page 
+    // of jobs to load
     currentPage++;
 
     this.thenClick("div#jobPager a#next").then(function() {
@@ -161,7 +169,7 @@ link. If we inspect this link, we see that it uses the CSS class `navigation-lin
 
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
 
-This means we can write a `getSelectedPage` function to return the currently selected page by finding
+This means we can write a `getSelectedPage()` function to return the currently selected page by finding
 the link with the `navigation-link-disabled` class and returning its value as an integer.
 
 {% highlight javascript %}
@@ -173,7 +181,7 @@ function getSelectedPage() {
 {% endhighlight %}
 
 Now let's put this all together. We can determine when the next page has finished loading by clicking on the 
-Next link and then waiting for the value returned by `getSelectedPage` link to become equal to `currentPage`. 
+Next link and then waiting for the value returned by `getSelectedPage()` link to become equal to `currentPage`. 
 Hence the comparison,
 
 {% highlight javascript %}
@@ -183,9 +191,41 @@ return currentPage === this.evaluate(getSelectedPage);
 Once these two values are the same, we can start scraping the jobs table knowing it has been updated 
 with the next page of jobs.
 
-Here's the entire listing:
+## Usage
 
-If you'd like to see a working implementation of the code, it's available on github here.
+Let's try it out:
+
+<pre>
+$ casperjs scraper.js 
+[
+    {
+        "location": "Multiple Locations",
+        "title": "Software Developer",
+        "url": "/careersection/l3_ext_us/jobdetail.ftl?job=068394"
+    },
+    {
+        "location": "USA-Virginia-McLean",
+        "title": "Frontend Developer",
+        "url": "/careersection/l3_ext_us/jobdetail.ftl?job=068158"
+    },
+    {
+        "location": "United States",
+        "title": "Procurement Specialist 2",
+        "url": "/careersection/l3_ext_us/jobdetail.ftl?job=068020"
+    },
+    ...
+    {
+        "location": "Multiple Locations",
+        "title": "Engineer Systems",
+        "url": "/careersection/l3_ext_us/jobdetail.ftl?job=067875"
+    }
+]
+Exiting..
+</pre>
+
+## Conclusion
+
+If you'd like to see a working implementation of the code, it's available on github [here](https://github.com/thayton/casperjs-taleo-job-scraper).
 
 For comparison purposes, the Python/Selenium implementation I developed in a previous post is available
-here.
+[here](https://github.com/thayton/taleo_job_scraper).
