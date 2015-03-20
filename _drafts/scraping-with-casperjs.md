@@ -135,7 +135,7 @@ a `Next` link. We'll click on that link to get the next page of results.
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
-If you inspect the Next link, you see it can be selected using the CSS selector `div#jobPager a#next`:
+If you inspect the Next link, you see it can be identified using the CSS selector `div#jobPager a#next`:
 
 ![Next link CSS](/assets/scraping-with-casperjs/nextlink_css.png)
 
@@ -156,12 +156,12 @@ So how do know when the next page of results has loaded? Let's go back and look 
 
 ![Pager Image](/assets/scraping-with-casperjs/pager.png)
 
-Note that the page we are currently on has it's link disabled. In the image above, that's the page two
+Note that the page we are currently on has it's link disabled. In the image above, it's the page 2
 link. If we inspect this link, we see that it uses the CSS class `navigation-link-disabled`:
 
 ![Pager CSS Image](/assets/scraping-with-casperjs/pager_css.png)
 
-This means we can write a `getSelectedPage` function to return the currently selected page by identifying
+This means we can write a `getSelectedPage` function to return the currently selected page by finding
 the link with the `navigation-link-disabled` class and returning its value as an integer.
 
 {% highlight javascript %}
@@ -172,8 +172,9 @@ function getSelectedPage() {
 }
 {% endhighlight %}
 
-To determine when the next page has finished loading, we click the Next link and then wait for 
-the value returned by `getSelectedPage` link to become equal to `currentPage`. Hence the comparison,
+Now let's put this all together. We can determine when the next page has finished loading by clicking on the 
+Next link and then waiting for the value returned by `getSelectedPage` link to become equal to `currentPage`. 
+Hence the comparison,
 
 {% highlight javascript %}
 return currentPage === this.evaluate(getSelectedPage);
