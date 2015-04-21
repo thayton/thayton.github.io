@@ -36,6 +36,10 @@ ctl00$ContentPlaceHolder1$btnSearch:Search
 <form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
 {% endhighlight %}
 
+{% highlight html %}
+<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions(&quot;ctl00$ContentPlaceHolder1$btnSearch&quot;, &quot;&quot;, true, &quot;vgLocationSearch&quot;, &quot;&quot;, false, false))" id="ctl00_ContentPlaceHolder1_btnSearch">
+{% endhighlight %}
+
 {% highlight javascript %}
 var theForm = document.forms['aspnetForm'];
 if (!theForm) {
@@ -338,6 +342,26 @@ function __doPostBack(eventTarget, eventArgument) {
 
 {% highlight html %}
 <a class="LinkPaging" href="javascript:__doPostBack('ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03','')">2</a>
+{% endhighlight %}
+
+{% highlight text %}
+ctl00$ScriptManager1:ctl00$ContentPlaceHolder1$pnlgrdSearchResult|ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03
+ctl00$ContentPlaceHolder1$search:rdbCityState
+ctl00$ContentPlaceHolder1$txtCity:
+ctl00$ContentPlaceHolder1$drpState:AK
+ctl00$ContentPlaceHolder1$txtZip:
+ctl00$ContentPlaceHolder1$drpRadius:1
+ctl00$ContentPlaceHolder1$drpBuilingType:
+ctl00$ContentPlaceHolder1$drpCountry:
+ctl00$ContentPlaceHolder1$dpdCandaStates:
+ctl00$ContentPlaceHolder1$txtFirmname:
+ctl00$ContentPlaceHolder1$hdnTabShow:0
+ctl00$ContentPlaceHolder1$hdnTotalRows:73
+__EVENTTARGET:ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03
+__EVENTARGUMENT:
+__VIEWSTATE:/wEPDwUKMTU0OTkzNj...
+__ASYNCPOST:true
+:
 {% endhighlight %}
 
 {% highlight python %}
