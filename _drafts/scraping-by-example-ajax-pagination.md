@@ -1,9 +1,11 @@
 ---
 layout: post
-title: Scraping by example
+title: Scraping ASP.NET Pages with AJAX Pagination
 ---
 
-Scraping by example
+## Background
+
+### Analyzing the Form Submission 
 
 ![Form](/assets/scraping-by-example-ajax-pagination/form.png)
 
@@ -30,8 +32,9 @@ the Form Data that was sent with the request.
 
 ![POST_headers](/assets/scraping-by-example-ajax-pagination/POST_headers.png)
 
-These are the variables our scraper needs to send when it submits the form. Here's the full 
-list of variables formatted for easier reading:
+These are the variables our scraper needs to send when it submits the form. The listing below
+shows the full list of variables with the __VIEWSTATE value truncated to make the whole thing
+easier to read.
 
 {% highlight text %}
 ctl00$ScriptManager1:ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch
@@ -53,13 +56,23 @@ __ASYNCPOST:true
 ctl00$ContentPlaceHolder1$btnSearch:Search
 {% endhighlight %}
 
+Now let's take a look at the response. Click on the Response tab in the developer tools.
+
 ![POST1_response](/assets/scraping-by-example-ajax-pagination/POST1_response.png)
+
+The response is a pipe-delimited string. We are interested in two of the values from this string.
+The first is the HTML right after the ctl00_ContentPlaceHolder1_pnlgrdSearchResult variable. That
+HTML string contains the search results for the form submission. 
+
+The other value is the string after the __VIEWSTATE variable. We'll need to extract the __VIEWSTATE 
+in order to do pagination. We'll cover that in the next section. For now, let's look at the HTML
+results.
 
 {% highlight text %}
 24137  | updatePanel | ctl00_ContentPlaceHolder1_pnlgrdSearchResult | <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" /><div><div style="font-weight: bold;"><span id="ctl00_ContentPlaceHolder1_lblRowCountMessage">1 - 20 of 73 Results</span></div><input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTotalRows" id="ctl00_ContentPlaceHolder1_hdnTotalRows" value="73" /></div>...|
 0      | hiddenField | __EVENTTARGET ||
 0      | hiddenField | __EVENTARGUMENT ||
-148128 | hiddenField | __VIEWSTATE |/wEPDwUKMTU0OTkzNjExNg... |
+148128 | hiddenField | __VIEWSTATE | /wEPDwUKMTU0OTkzNjExNg... |
 121    | asyncPostBackControlIDs || ctl00$ContentPlaceHolder1$btnSearch,ctl00$ContentPlaceHolder1$btnfrmSearch,ctl00$ContentPlaceHolder1$tmrLoadSearchResults|
 0      | postBackControlIDs |||
 45     | updatePanelIDs || tctl00$ContentPlaceHolder1$pnlgrdSearchResult |
@@ -138,39 +151,8 @@ ctl00$ContentPlaceHolder1$btnSearch:Search
 </div>
 {% endhighlight %}
 
-{% highlight html %}
-<form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
-{% endhighlight %}
 
-{% highlight html %}
-<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions('ctl00$ContentPlaceHolder1$btnSearch', '', true, 'vgLocationSearch', '', false, false))" id="ctl00_ContentPlaceHolder1_btnSearch">
-{% endhighlight %}
-
-{% highlight python %}
-(Pdb) print '\n'.join(['%s:%s' % (c.name,c.value) for c in self.br.form.controls])
-{% endhighlight %}
-
-{% highlight text %}
-__EVENTTARGET:
-__EVENTARGUMENT:
-__VIEWSTATE:/wEPDwUKMTU0OTkzNjExN...
-ctl00$ContentPlaceHolder1$btnAccept:Ok
-None:None
-ctl00$ContentPlaceHolder1$search:['rdbCityState']
-ctl00$ContentPlaceHolder1$txtCity:
-ctl00$ContentPlaceHolder1$drpState:['AK']
-ctl00$ContentPlaceHolder1$txtZip:
-ctl00$ContentPlaceHolder1$drpRadius:['1']
-ctl00$ContentPlaceHolder1$drpBuilingType:['']
-ctl00$ContentPlaceHolder1$drpCountry:['']
-ctl00$ContentPlaceHolder1$dpdCandaStates:['']
-ctl00$ContentPlaceHolder1$btnSearch:Search
-ctl00$ContentPlaceHolder1$txtFirmname:
-ctl00$ContentPlaceHolder1$btnfrmSearch:Search
-ctl00$ContentPlaceHolder1$hdnTabShow:0
-ctl00$ContentPlaceHolder1$hdnTotalRows:
-None:None
-{% endhighlight %}
+### Analyzing Pagination
 
 ![Pagination](/assets/scraping-by-example-ajax-pagination/pagination.png)
 ![Inspect Page Number Link](/assets/scraping-by-example-ajax-pagination/inspect_page_number_link.png)
@@ -212,6 +194,46 @@ __VIEWSTATE:/wEPDwUKMTU0OTkzNj...
 __ASYNCPOST:true
 :
 {% endhighlight %}
+
+## Implementation
+
+### Submitting the Form in a Script
+
+{% highlight html %}
+<form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
+{% endhighlight %}
+
+{% highlight html %}
+<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions('ctl00$ContentPlaceHolder1$btnSearch', '', true, 'vgLocationSearch', '', false, false))" id="ctl00_ContentPlaceHolder1_btnSearch">
+{% endhighlight %}
+
+{% highlight python %}
+(Pdb) print '\n'.join(['%s:%s' % (c.name,c.value) for c in self.br.form.controls])
+{% endhighlight %}
+
+{% highlight text %}
+__EVENTTARGET:
+__EVENTARGUMENT:
+__VIEWSTATE:/wEPDwUKMTU0OTkzNjExN...
+ctl00$ContentPlaceHolder1$btnAccept:Ok
+None:None
+ctl00$ContentPlaceHolder1$search:['rdbCityState']
+ctl00$ContentPlaceHolder1$txtCity:
+ctl00$ContentPlaceHolder1$drpState:['AK']
+ctl00$ContentPlaceHolder1$txtZip:
+ctl00$ContentPlaceHolder1$drpRadius:['1']
+ctl00$ContentPlaceHolder1$drpBuilingType:['']
+ctl00$ContentPlaceHolder1$drpCountry:['']
+ctl00$ContentPlaceHolder1$dpdCandaStates:['']
+ctl00$ContentPlaceHolder1$btnSearch:Search
+ctl00$ContentPlaceHolder1$txtFirmname:
+ctl00$ContentPlaceHolder1$btnfrmSearch:Search
+ctl00$ContentPlaceHolder1$hdnTabShow:0
+ctl00$ContentPlaceHolder1$hdnTotalRows:
+None:None
+{% endhighlight %}
+
+### Pagination in the Script
 
 {% highlight python %}
 def scrape_state_firms(self, state_item):
