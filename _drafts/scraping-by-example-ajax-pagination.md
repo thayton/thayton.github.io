@@ -12,25 +12,30 @@ that uses AJAX for pagination and results.
 ## Background
 
 The site I'll use as an example in today's post is the search form provided by The American 
-Institute of Architects for finding architect firms in the US. The form is at the following
-URL.
+Institute of Architects for finding architecture firms in the US. The form is at the following
+URL. 
 
 [http://architectfinder.aia.org/frmSearch.aspx](http://architectfinder.aia.org/frmSearch.aspx)
 
-I've broken this post into two parts. In the first part, we'll use the Chrome developer
-tools to inspect the requests sent to do both the initial form submission and the requests
-sent to do pagination. In the second section I'll show how to write a scraper based off
-of the information in the first section.
+I'll show how to scrape the names and links of the architecture firms behind the form. First, 
+we'll use the Chrome developer tools to inspect the requests sent to do both the initial form 
+submission and the requests sent to do pagination. In the second section I'll show how to write 
+a scraper based off of the information in the first section.
 
 ### Analyzing the Form Submission 
 
+Click on the above link to get to the following search form:
+
 ![Form](/assets/scraping-by-example-ajax-pagination/form.png)
+
+Next, open the Chrome developer tools so we can caputre and investigate the requests
+sent when the form is submitted.
 
 Open the Chrome developer tools by selecting View > Developer > Developer Tools
 
 ![Developer Tools](/assets/scraping-ajax-pages-with-python/developer_tools.png)
 
-Select 'Alaska' from the state dropdown list.
+Next, select 'Alaska' from the state dropdown list.
 
 ![Form State](/assets/scraping-by-example-ajax-pagination/form_state.png)
 
@@ -38,6 +43,9 @@ Click the Search button. After a moment our two, you'll see the area below the s
 form populated with the results.
 
 ![Results](/assets/scraping-by-example-ajax-pagination/results.png)
+
+Notice that the entire page did not refresh. Instead the bottom pane was dynamically
+populated with the results. 
 
 In the developer tools, click on the Network tab. You'll see a list of requests that were
 sent when the form was submitted.
@@ -73,17 +81,19 @@ __ASYNCPOST:true
 ctl00$ContentPlaceHolder1$btnSearch:Search
 {% endhighlight %}
 
+If you're very observant you'll notice that the first variable in the list, ctl00$ScriptManager1,
+doesn't show up in the form. It's created in ....
+
+
+We'll have to create this variable ourself in the scraper.
+
 Now let's take a look at the response. Click on the Response tab in the developer tools.
 
 ![POST1_response](/assets/scraping-by-example-ajax-pagination/POST1_response.png)
 
-The response is a pipe-delimited string. We are interested in two of the values from this string.
-The first is the HTML right after the ctl00\_ContentPlaceHolder1\_pnlgrdSearchResult variable. That
-HTML string contains the search results for the form submission. 
-
-The other value is the string after the \_\_VIEWSTATE variable. We'll need to extract the \_\_VIEWSTATE 
-in order to do pagination. We'll cover that in the next section. For now, let's look at the HTML
-results.
+The response is a pipe-delimited string with the format [Length|Type|ID|Content] where
+Length is the number of bytes in Content. Once you break out the pipe-delimited string
+this way it becomes much easier to understand:
 
 |Length | Type | ID | Content |
 |-------|------|----|---------|
@@ -99,19 +109,16 @@ results.
 | 3      | asyncPostBackTimeout || 600 |
 | 14     | formAction || frmSearch.aspx |
 
-{% highlight text %}
-24137  | updatePanel | ctl00_ContentPlaceHolder1_pnlgrdSearchResult | <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" /><div><div style="font-weight: bold;"><span id="ctl00_ContentPlaceHolder1_lblRowCountMessage">1 - 20 of 73 Results</span></div><input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTotalRows" id="ctl00_ContentPlaceHolder1_hdnTotalRows" value="73" /></div>...|
-0      | hiddenField | __EVENTTARGET ||
-0      | hiddenField | __EVENTARGUMENT ||
-148128 | hiddenField | __VIEWSTATE | /wEPDwUKMTU0OTkzNjExNg... |
-121    | asyncPostBackControlIDs || ctl00$ContentPlaceHolder1$btnSearch,ctl00$ContentPlaceHolder1$btnfrmSearch,ctl00$ContentPlaceHolder1$tmrLoadSearchResults|
-0      | postBackControlIDs |||
-45     | updatePanelIDs || tctl00$ContentPlaceHolder1$pnlgrdSearchResult |
-0      | childUpdatePanelIDs |||
-44     | panelsToRefreshIDs || ctl00$ContentPlaceHolder1$pnlgrdSearchResult |
-3      | asyncPostBackTimeout || 600 |
-14     | formAction || frmSearch.aspx |
-{% endhighlight %}
+Immediately we can see that the results for the form submission are contained in the Content for ID
+ctl00\_ContentPlaceHolder1\_pnlgrdSearchResult. The HTML in the content are the results of the search.
+However, the content here are only for the first page of all the results. If there are more than 20
+results in all, then you have to use the pager at the bottom to click to the subsequent pages.
+
+I mention this because it means we also need to pay attention to the \_\_VIEWSTATE variable in the above
+table. The contents of the \_\_VIEWSTATE will be sent when we click on page number links as you'll see
+in just a moment.
+
+For now, let's look at the HTML results.
 
 {% highlight html %}
 <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" />
@@ -182,15 +189,37 @@ results.
 </div>
 {% endhighlight %}
 
+I've pulled out one of the result links for the firm Kumin Associates. 
+
+{% highlight html %}
+<a id="ctl00_ContentPlaceHolder1_grdSearchResult_ctl03_hpFirmName" 
+   href="frmFirmDetails.aspx?FirmID=F12ED5B3-88A1-49EC-96BC-ACFAA90C68F1">
+   Kumin Associates, Inc.
+</a>
+{% endhighlight %}
+
+You can see that we can match the links using the regex `^frmFirmDetails\.aspx\?FirmID=([A-Z0-9-]+)$`
+and the id attribute using the regex `hpFirmName$`.
 
 ### Analyzing Pagination
 
+Now let's investigate how the pagination works for this site. Scroll down to the bottom of the results
+and you'll see the pager.
+
 ![Pagination](/assets/scraping-by-example-ajax-pagination/pagination.png)
+
+Right click on the page 2 link to inspect the page 2 link in Developer Tools.
+
 ![Inspect Page Number Link](/assets/scraping-by-example-ajax-pagination/inspect_page_number_link.png)
+
+You'll see that the HTML for each page link has the following format.
 
 {% highlight html %}
 <a class="LinkPaging" href="javascript:__doPostBack('ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03','')">2</a>
 {% endhighlight %}
+
+So when you click a page link in the pager the `__doPostBack()` function is called with one argument. Here's the 
+defininition of `__doPostBack`:
 
 {% highlight javascript %}
 var theForm = document.forms['aspnetForm'];
@@ -205,6 +234,13 @@ function __doPostBack(eventTarget, eventArgument) {
     }
 }
 {% endhighlight %}
+
+We can see that `__doPostBack()` is very simple for pagination. It simply sets the \_\_EVENTTARGET variable to 
+the argument passed to `__doPostBack()` and submits the search form. For our scraper that means we can extract
+the argument to `__doPostBack()` with a regex like `__doPostBack\('([^']+)` and then replicate the same form
+submission with \_\_EVENTTARGET set.
+
+Now, click on the page 2 link so we can inspect the variables in the Network tab of the Developer Tools.
 
 {% highlight text %}
 ctl00$ScriptManager1:ctl00$ContentPlaceHolder1$pnlgrdSearchResult|ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03
@@ -225,6 +261,32 @@ __VIEWSTATE:/wEPDwUKMTU0OTkzNj...
 __ASYNCPOST:true
 :
 {% endhighlight %}
+
+Once again, notice that `ctl00$ScriptManager1` doesn't show up in the form but it shows up here again, 
+this time with the value
+
+`ctl00$ContentPlaceHolder1$pnlgrdSearchResult|ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03`
+
+Again, we'll have to create the key/value pair in a scraper to make the request work.
+
+You can see that the \_\_EVENTTARGET variable is set to the value of the argument passed to `__doPostBack()`
+in the page 2 link.
+
+There's one more point we need to take note of. The \_\_VIEWSTATE variable is to the same value we got back
+from the server when it sent the first page of results. We need to use the \_\_VIEWSTATE value the server
+provides us to get the pagination to work.
+
+Let's take a summary of what we need our scraper to do to get all of the results for a given state:
+
+- Select the aspnetForm form
+- Select a state 
+- Create and set the necessary request variables not present in form (ASYNCPOST and ctl00$ScriptManager1)
+- Submit the form
+- Extract the results from the pnlgrdSearchResult variable 
+- Extract the \_\_VIEWSTATE
+- Extract \_\_EVENTTARGET argument from the next page link
+- Submit the form again with our new variables
+- Repeat until we get to the last page of results
 
 ## Implementation
 
