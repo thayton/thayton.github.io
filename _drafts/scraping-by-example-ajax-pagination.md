@@ -3,7 +3,24 @@ layout: post
 title: Scraping ASP.NET Pages with AJAX Pagination
 ---
 
+In a [previous post]({% post_url 2015-03-11-scraping-ajax-pages-with-python %}) I showed how
+to scrape a page that uses AJAX to return results dynamically. In that example, the results
+were easy to parse (XML) and the pagination scheme was straightforward (page number in the
+AJAX query JSON). In this post, I'll show a more complicated example for an ASP.NET site
+that uses AJAX for pagination and results.
+
 ## Background
+
+The site I'll use as an example in today's post is the search form provided by The American 
+Institute of Architects for finding architect firms in the US. The form is at the following
+URL.
+
+[http://architectfinder.aia.org/frmSearch.aspx](http://architectfinder.aia.org/frmSearch.aspx)
+
+I've broken this post into two parts. In the first part, we'll use the Chrome developer
+tools to inspect the requests sent to do both the initial form submission and the requests
+sent to do pagination. In the second section I'll show how to write a scraper based off
+of the information in the first section.
 
 ### Analyzing the Form Submission 
 
@@ -61,12 +78,26 @@ Now let's take a look at the response. Click on the Response tab in the develope
 ![POST1_response](/assets/scraping-by-example-ajax-pagination/POST1_response.png)
 
 The response is a pipe-delimited string. We are interested in two of the values from this string.
-The first is the HTML right after the ctl00_ContentPlaceHolder1_pnlgrdSearchResult variable. That
+The first is the HTML right after the ctl00\_ContentPlaceHolder1\_pnlgrdSearchResult variable. That
 HTML string contains the search results for the form submission. 
 
-The other value is the string after the __VIEWSTATE variable. We'll need to extract the __VIEWSTATE 
+The other value is the string after the \_\_VIEWSTATE variable. We'll need to extract the \_\_VIEWSTATE 
 in order to do pagination. We'll cover that in the next section. For now, let's look at the HTML
 results.
+
+|Length | Type | ID | Content |
+|-------|------|----|---------|
+| 24137  | updatePanel | ctl00\_ContentPlaceHolder1\_pnlgrdSearchResult | <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" /><div><div style="font-weight: bold;"><span id="ctl00_ContentPlaceHolder1_lblRowCountMessage">1 - 20 of 73 Results</span></div><input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTotalRows" id="ctl00_ContentPlaceHolder1_hdnTotalRows" value="73" /></div>...|
+| 0      | hiddenField | __EVENTTARGET ||
+| 0      | hiddenField | __EVENTARGUMENT ||
+| 148128 | hiddenField | __VIEWSTATE | /wEPDwUKMTU0OTkzNjExNg... |
+| 121    | asyncPostBackControlIDs || ctl00$ContentPlaceHolder1$btnSearch,ctl00$ContentPlaceHolder1$btnfrmSearch,ctl00$ContentPlaceHolder1$tmrLoadSearchResults|
+| 0      | postBackControlIDs |||
+| 45     | updatePanelIDs || tctl00$ContentPlaceHolder1$pnlgrdSearchResult |
+| 0      | childUpdatePanelIDs |||
+| 44     | panelsToRefreshIDs || ctl00$ContentPlaceHolder1$pnlgrdSearchResult |
+| 3      | asyncPostBackTimeout || 600 |
+| 14     | formAction || frmSearch.aspx |
 
 {% highlight text %}
 24137  | updatePanel | ctl00_ContentPlaceHolder1_pnlgrdSearchResult | <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" /><div><div style="font-weight: bold;"><span id="ctl00_ContentPlaceHolder1_lblRowCountMessage">1 - 20 of 73 Results</span></div><input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTotalRows" id="ctl00_ContentPlaceHolder1_hdnTotalRows" value="73" /></div>...|
