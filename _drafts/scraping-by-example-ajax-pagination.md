@@ -461,8 +461,9 @@ def scrape_state_firms(self, state_item):
 {% endhighlight %}
 
 I create a dictionary of key value pairs out of the AJAX response the server sends. Even though
-the response is actually a four-tuple of `Length|Type|ID|Content`, treating it as a two-tuple
-works and let's us use an ID as a key to get to its associated Content.
+the response is actually a string of `Length|Type|ID|Content `four-tuples, treating it as a string
+of key value pairs separated by `|` works and let's us use an ID as a key to get to its associated 
+Content.
 
 Preceding and succeeding this code snippet is the set up for the pagination (`pageno = 2`) which
 I'll go over next.
@@ -482,7 +483,13 @@ def scrape_state_firms(self, state_item):
     pageno = 2
 
     while True:
+        resp = self.br.response().read()
+
+        it = iter(resp.split('|'))
+        kv = dict(zip(it, it))
+
         ...
+
         # Find next page number link
         a = s.find('a', text='%d' % pageno)
         if not a:
