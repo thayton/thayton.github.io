@@ -357,9 +357,7 @@ def scrape_state_firms(self, state_item):
 
     self.br.select_form('aspnetForm')
     self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
-    self.br.form.new_control('hidden', '__ASYNCPOST', {'value': 'true'})
-    self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch'})
-    self.br.form.fixup()
+
 {% endhighlight %}
 
 Note that I save a copy of the form's HTML. That's so that later, when we do the pagination we still
@@ -369,29 +367,32 @@ Now, at this point, if we print out the controls that mechanize has picked up fr
 it shows the following control key value pairs:
 
 {% highlight python %}
-(Pdb) print '\n'.join(['%s:%s' % (c.name,c.value) for c in self.br.form.controls])
+(Pdb) print '\n'.join(['%s:%s (%s)' % (c.name,c.value,c.disabled) for c in self.br.form.controls])
 {% endhighlight %}
 
+Note that I also print out whether or not a control is disabled. It shows up as True or False in 
+parentheses.
+
 {% highlight text %}
-__EVENTTARGET:
-__EVENTARGUMENT:
+__EVENTTARGET: (False)
+__EVENTARGUMENT: (False)
 __VIEWSTATE:/wEPDwUKMTU0OTkzNjExN...
-ctl00$ContentPlaceHolder1$btnAccept:Ok
-None:None
-ctl00$ContentPlaceHolder1$search:['rdbCityState']
-ctl00$ContentPlaceHolder1$txtCity:
-ctl00$ContentPlaceHolder1$drpState:['AK']
-ctl00$ContentPlaceHolder1$txtZip:
-ctl00$ContentPlaceHolder1$drpRadius:['1']
-ctl00$ContentPlaceHolder1$drpBuilingType:['']
-ctl00$ContentPlaceHolder1$drpCountry:['']
-ctl00$ContentPlaceHolder1$dpdCandaStates:['']
-ctl00$ContentPlaceHolder1$btnSearch:Search
-ctl00$ContentPlaceHolder1$txtFirmname:
-ctl00$ContentPlaceHolder1$btnfrmSearch:Search
-ctl00$ContentPlaceHolder1$hdnTabShow:0
-ctl00$ContentPlaceHolder1$hdnTotalRows:
-None:None
+ctl00$ContentPlaceHolder1$btnAccept:Ok (False)
+None:None (False)
+ctl00$ContentPlaceHolder1$search:['rdbCityState'] (False)
+ctl00$ContentPlaceHolder1$txtCity: (False)
+ctl00$ContentPlaceHolder1$drpState:['AK'] (False)
+ctl00$ContentPlaceHolder1$txtZip: (False)
+ctl00$ContentPlaceHolder1$drpRadius:['1'] (False)
+ctl00$ContentPlaceHolder1$drpBuilingType:[''] (False)
+ctl00$ContentPlaceHolder1$drpCountry:[''] (False)
+ctl00$ContentPlaceHolder1$dpdCandaStates:[''] (False)
+ctl00$ContentPlaceHolder1$btnSearch:Search (True)
+ctl00$ContentPlaceHolder1$txtFirmname: (False)
+ctl00$ContentPlaceHolder1$btnfrmSearch:Search (True)
+ctl00$ContentPlaceHolder1$hdnTabShow:0 (False)
+ctl00$ContentPlaceHolder1$hdnTotalRows: (False)
+None:None (False)
 {% endhighlight %}
 
 Note that two of the controls, `btnfrmSearch` and `btnAccept` didn't show up in the
@@ -405,9 +406,16 @@ submitting the form.
 Also, if you examine the `btnSearch` control you'll see that it's currently disabled. We'll need 
 to enable it before we submit the form.
 
+Let's do all that and also create controls for `__ASYNCPOST` and `ctl00$ScriptManager1` as discussed
+earlier in this post.
+
 {% highlight python %}
 def scrape_state_firms(self, state_item):
     ...
+    self.br.form.new_control('hidden', '__ASYNCPOST', {'value': 'true'})
+    self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch'})
+    self.br.form.fixup()
+
     ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnfrmSearch')
     self.br.form.controls.remove(ctl)
 
@@ -420,7 +428,7 @@ def scrape_state_firms(self, state_item):
     self.br.submit()
 {% endhighlight %}
 
-Now that we've submitted the form, next we'll see how to extract and print out the names
+Now that we've submitted the form, let's see how to extract and print out the names
 and links of the architecture firms from the results sent back in the AJAX response.
 
 {% highlight python %}
@@ -454,7 +462,7 @@ def scrape_state_firms(self, state_item):
 
 I create a dictionary of key value pairs out of the AJAX response the server sends. Even though
 the response is actually a four-tuple of `Length|Type|ID|Content`, treating it as a two-tuple
-works and let's us get use an ID as a key to get to its associated content.
+works and let's us use an ID as a key to get to its associated Content.
 
 Preceding and succeeding this code snippet is the set up for the pagination (`pageno = 2`) which
 I'll go over next.
