@@ -335,15 +335,35 @@ Let's take stock of what we need our scraper to do to get all of the results for
 
 ## Implementation
 
-### Submitting the Form in a Script
+At this point we've got enough information about how the site works to write our scraper script. 
+
+### Submitting the Form
+
+First, I'll go over selecting and submitting the form. If you inspect the HTML of the search form
+you'll see that it's `name` attribute is set to `aspnetForm`. 
 
 {% highlight html %}
 <form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
 {% endhighlight %}
 
-{% highlight html %}
-<input type="submit" name="ctl00$ContentPlaceHolder1$btnSearch" value="Search" onclick="javascript:WebForm_DoPostBackWithOptions(new WebForm_PostBackOptions('ctl00$ContentPlaceHolder1$btnSearch', '', true, 'vgLocationSearch', '', false, false))" id="ctl00_ContentPlaceHolder1_btnSearch">
+We''ll pass that as the argument to mechanize's `select_form()` method. 
+
+{% highlight python %}
+def scrape_state_firms(self, state_item):
+    self.br.open(self.url)
+
+    s = BeautifulSoup(self.br.response().read())
+    saved_form = s.find('form', id='aspnetForm').prettify()
+
+    self.br.select_form('aspnetForm')
+    self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
+    self.br.form.new_control('hidden', '__ASYNCPOST', {'value': 'true'})
+    self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch'})
+    self.br.form.fixup()
 {% endhighlight %}
+
+At this point, if we print out the controls that mechanize has picked up from selecting the form
+it shows the following control key value pairs:
 
 {% highlight python %}
 (Pdb) print '\n'.join(['%s:%s' % (c.name,c.value) for c in self.br.form.controls])
@@ -371,23 +391,104 @@ ctl00$ContentPlaceHolder1$hdnTotalRows:
 None:None
 {% endhighlight %}
 
-### Pagination in the Script
+Note that two of the controls, `btnfrmSearch` and `btnAccept` didn't show up in the
+Developer Tools variable list earlier in this post. 
+
+The first control, `btnfrmSearch` is used for searching for a firm by name. The second control, 
+`btnAccept` is the Accept button a user clicks on to accept the site's Terms of Use (you probably 
+saw this the first time you visited the site). We'll remove both of these controls before 
+submitting the form.
+
+Also, if you examine the `btnSearch` control you'll see that it's currently disabled. We'll need 
+to enable it before we submit the form.
 
 {% highlight python %}
 def scrape_state_firms(self, state_item):
-        self.br.open(self.url)
-        
-        s = soupify(self.br.response().read())
-        saved_form = s.find('form', id='aspnetForm').prettify()
+    ...
+    ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnfrmSearch')
+    self.br.form.controls.remove(ctl)
 
+    ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnAccept')
+    self.br.form.controls.remove(ctl)
+
+    ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnSearch')
+    ctl.disabled = False
+
+    self.br.submit()
+{% endhighlight %}
+
+Now that we've submitted the form, we'll see how to extract and print out the names
+and links of the architecture firms from the results sent back in the AJAX response.
+
+{% highlight python %}
+def scrape_state_firms(self, state_item):
+    ...
+    pageno = 2
+
+    while True:
+        resp = self.br.response().read()
+
+        it = iter(resp.split('|'))
+        kv = dict(zip(it, it))
+
+        s = BeautifulSoup(kv['ctl00_ContentPlaceHolder1_pnlgrdSearchResult'])
+        r1 = re.compile(r'^frmFirmDetails\.aspx\?FirmID=([A-Z0-9-]+)$')
+        r2 = re.compile(r'hpFirmName$')
+        x = {'href': r1, 'id': r2}
+
+        for a in s.findAll('a', attrs=x):
+            print 'firm name: ', a.text
+            print 'firm url: ', urlparse.urljoin(self.br.geturl(), a['href'])
+            print 
+
+        # Find next page number link
+        a = s.find('a', text='%d' % pageno)
+        if not a:
+            break
+
+        pageno += 1
+{% endhighlight %}
+
+### Pagination
+
+Finally we'll tackle the pagination. 
+
+{% highlight python %}
+def scrape_state_firms(self, state_item):
+    ...
+    pageno = 2
+
+    while True:
+        ...
+        # Find next page number link
+        a = s.find('a', text='%d' % pageno)
+        if not a:
+            break
+
+        pageno += 1
+
+        # New __VIEWSTATE value
+        view_state = kv['__VIEWSTATE'] 
+
+        # Extract new __EVENTTARGET value from next page link
+        r = re.compile(r"__doPostBack\('([^']+)")
+        m = re.search(r, a['href'])
+        event_target = m.group(1)
+
+        # Regenerate form for next page
+        html = saved_form.encode('utf8')
+        resp = mechanize.make_response(html, [("Content-Type", "text/html")],
+                                       self.br.geturl(), 200, "OK")
+
+        self.br.set_response(resp)
         self.br.select_form('aspnetForm')
-
-        self.br.form.new_control('hidden', '__EVENTTARGET',   {'value': ''})
-        self.br.form.new_control('hidden', '__EVENTARGUMENT', {'value': ''})
-        self.br.form.new_control('hidden', '__ASYNCPOST',     {'value': 'true'})
-        self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch'})
-        self.br.form.fixup()
+        self.br.form.set_all_readonly(False)
+        self.br.form['__EVENTTARGET'] = event_target
+        self.br.form['__VIEWSTATE'] = view_state
         self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
+        self.br.form.new_control('hidden', '__ASYNCPOST',     {'value': 'true'})
+        self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ContentPlaceHolder1$pnlgrdSearchResult|'+event_target})
+        self.br.form.fixup()
 
         ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnfrmSearch')
         self.br.form.controls.remove(ctl)
@@ -396,73 +497,9 @@ def scrape_state_firms(self, state_item):
         self.br.form.controls.remove(ctl)
 
         ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnSearch')
-        ctl.disabled = False
+        self.br.form.controls.remove(ctl)
 
         self.br.submit()
-{% endhighlight %}
-
-{% highlight python %}
-pageno = 2
-
-        while True:
-            r = self.br.response()
-            s = BeautifulSoup(r.read())
-            r = re.compile(r'^frmFirmDetails\.aspx\?FirmID=([A-Z0-9-]+)$')
-
-            for a in s.findAll('a', href=r):
-                m = re.search(r, a['href'])
-                g = m.group(1)
-
-                if ArchitectureFirm.objects.filter(frmid=g).exists():
-                    continue
-
-                firm = ArchitectureFirm()
-                firm.name = a.text
-                firm.frmid = m.group(1)
-                firm.save()
-
-                print a
-
-
-            a = s.find('a', text='%d' % pageno)
-            if not a:
-                break
-
-            pageno += 1
-{% endhighlight %}
-
-{% highlight python %}
-r = re.compile(r'VIEWSTATE\|([^|]+)')
-            m = re.search(r, str(s))
-            view_state = m.group(1)
-
-            r = re.compile(r"__doPostBack\('([^']+)")
-            m = re.search(r, a['href'])
-
-            html = saved_form.encode('utf8')
-            resp = mechanize.make_response(html, [("Content-Type", "text/html")],
-                                           self.br.geturl(), 200, "OK")
-            self.br.set_response(resp)
-            self.br.select_form('aspnetForm')
-
-            self.br.form.set_all_readonly(False)
-            self.br.form['__EVENTTARGET'] = m.group(1)
-            self.br.form['__VIEWSTATE'] = view_state
-            self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
-            self.br.form.new_control('hidden', '__ASYNCPOST',     {'value': 'true'})
-            self.br.form.new_control('hidden', 'ctl00$ScriptManager1', {'value': 'ctl00$ContentPlaceHolder1$pnlgrdSearchResult|'+m.group(1)})
-            self.br.form.fixup()
-
-            ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnfrmSearch')
-            self.br.form.controls.remove(ctl)
-
-            ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnAccept')
-            self.br.form.controls.remove(ctl)
-
-            ctl = self.br.form.find_control('ctl00$ContentPlaceHolder1$btnSearch')
-            self.br.form.controls.remove(ctl)
-
-            self.br.submit()
 {% endhighlight %}
 
 
