@@ -340,7 +340,7 @@ At this point we've got enough information about how the site works to write our
 ### Submitting the Form
 
 First, I'll go over selecting and submitting the form. If you inspect the HTML of the search form
-you'll see that it's `name` attribute is set to `aspnetForm`. 
+you'll see that its `name` attribute is set to `aspnetForm`. 
 
 {% highlight html %}
 <form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
@@ -362,7 +362,10 @@ def scrape_state_firms(self, state_item):
     self.br.form.fixup()
 {% endhighlight %}
 
-At this point, if we print out the controls that mechanize has picked up from selecting the form
+Note that I save a copy of the form's HTML. That's so that later, when we do the pagination we still
+have a copy of the form to work with when we update the variables to get the next page of results.
+
+Now, at this point, if we print out the controls that mechanize has picked up from selecting the form
 it shows the following control key value pairs:
 
 {% highlight python %}
@@ -417,7 +420,7 @@ def scrape_state_firms(self, state_item):
     self.br.submit()
 {% endhighlight %}
 
-Now that we've submitted the form, we'll see how to extract and print out the names
+Now that we've submitted the form, next we'll see how to extract and print out the names
 and links of the architecture firms from the results sent back in the AJAX response.
 
 {% highlight python %}
@@ -449,9 +452,21 @@ def scrape_state_firms(self, state_item):
         pageno += 1
 {% endhighlight %}
 
+I create a dictionary of key value pairs out of the AJAX response the server sends. Even though
+the response is actually a four-tuple of `Length|Type|ID|Content`, treating it as a two-tuple
+works and let's us get use an ID as a key to get to its associated content.
+
+Preceding and succeeding this code snippet is the set up for the pagination (`pageno = 2`) which
+I'll go over next.
+
 ### Pagination
 
-Finally we'll tackle the pagination. 
+For the pagination, we recreate the form from the HTML we copied ealier. Then we extract the value
+we need for the next page `__EVENTTARGET` from the next page's page number link. We update the form
+control values again, create the variables that aren't picked up from the form (`__ASYNCPOST` and
+`ctl100ScriptManager`) and set their values to match what we saw in the Developer Tools earlier.
+
+Then we submit the form again and repeat the whole process until we reach the last page of the results.
 
 {% highlight python %}
 def scrape_state_firms(self, state_item):
