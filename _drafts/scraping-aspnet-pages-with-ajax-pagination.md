@@ -26,7 +26,7 @@ to write a scraper based off of the information in the first section.
 
 Let's get started. Click on the above link to get to the following search form:
 
-![Form](/assets/scraping-by-example-ajax-pagination/form.png)
+![Form](/assets/scraping-aspnet-with-ajax-pagination/form.png)
 
 Next, open the Chrome developer tools so we can capture and study the requests sent when the 
 form is submitted.
@@ -37,22 +37,22 @@ Open the Chrome developer tools by selecting View > Developer > Developer Tools
 
 Next, select 'Alaska' from the state dropdown list.
 
-![Form State](/assets/scraping-by-example-ajax-pagination/form_state.png)
+![Form State](/assets/scraping-aspnet-with-ajax-pagination/form_state.png)
 
 Click the Search button. After a moment our two, you'll see the area below the search
 form populated with the results.
 
-![Results](/assets/scraping-by-example-ajax-pagination/results.png)
+![Results](/assets/scraping-aspnet-with-ajax-pagination/results.png)
 
 In the developer tools, click on the Network tab. You'll see the requests that were 
 sent when the form was submitted.
 
-![Network Tab Requests](/assets/scraping-by-example-ajax-pagination/network_tab_requests.png)
+![Network Tab Requests](/assets/scraping-aspnet-with-ajax-pagination/network_tab_requests.png)
 
 Click on the POST request to frmSearch.aspx. With the Headers tab selected, scroll down to see 
 the Form Data that was sent with the request.
 
-![POST_headers](/assets/scraping-by-example-ajax-pagination/POST_headers.png)
+![POST_headers](/assets/scraping-aspnet-with-ajax-pagination/POST_headers.png)
 
 These are the variables our scraper needs to send when it submits the form. The listing below
 shows the full list of variables with the `__VIEWSTATE` value truncated to make the whole thing
@@ -110,7 +110,7 @@ We'll have to create that key value pair manually too.
 
 Now let's take a look at the response. Click on the Response tab in the Developer Tools.
 
-![POST1_response](/assets/scraping-by-example-ajax-pagination/POST1_response.png)
+![POST1_response](/assets/scraping-aspnet-with-ajax-pagination/POST1_response.png)
 
 The response is a pipe-delimited string with the format 
 
@@ -246,11 +246,11 @@ and the `id` attribute can be matched using the regex `hpFirmName$`.
 Now let's investigate how the pagination works for this site. Scroll down to the bottom of the results
 and you'll see the pager.
 
-![Pagination](/assets/scraping-by-example-ajax-pagination/pagination.png)
+![Pagination](/assets/scraping-aspnet-with-ajax-pagination/pagination.png)
 
 Right click on the page 2 link and select Inspect Element to inspect the page 2 link in Developer Tools.
 
-![Inspect Page Number Link](/assets/scraping-by-example-ajax-pagination/inspect_page_number_link.png)
+![Inspect Page Number Link](/assets/scraping-aspnet-with-ajax-pagination/inspect_page_number_link.png)
 
 You'll see that the HTML for each page link has the following format.
 
