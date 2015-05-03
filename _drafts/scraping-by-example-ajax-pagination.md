@@ -532,4 +532,11 @@ def scrape_state_firms(self, state_item):
         self.br.submit()
 {% endhighlight %}
 
+If you'd like to see the full implementation, the source code for this article is available on 
+[github](https://github.com/thayton/architectfinder).
+
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+for a free quote.
 
