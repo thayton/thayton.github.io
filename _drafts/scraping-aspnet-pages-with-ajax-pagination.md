@@ -336,6 +336,34 @@ Let's take stock of what we need our scraper to do to get all of the results for
 
 At this point we've got enough information about how the site works to write our scraper. 
 
+{% highlight python %}
+#!/usr/bin/env python                                                                                                                                                                
+
+"""
+Python script for scraping the results from http://architectfinder.aia.org/frmSearch.aspx
+"""
+
+__author__ = 'Todd Hayton'
+
+import re
+import urlparse
+import mechanize
+
+from bs4 import BeautifulSoup
+
+class ArchitectFinderScraper(object):
+    def __init__(self):
+        self.url = "http://architectfinder.aia.org/frmSearch.aspx"
+        self.br = mechanize.Browser()
+        self.br.addheaders = [('User-agent', 
+                               'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_8) AppleWebKit/535.7 (KHTML, like Gecko) Chrome/16.0.912.63 Safari/535.7')]
+
+if __name__ == '__main__':
+    scraper = ArchitectFinderScraper()
+    scraper.scrape()
+
+{% endhighlight %}
+
 ### Submitting the Form
 
 First, I'll go over selecting and submitting the form. If you inspect the HTML of the search form
@@ -529,6 +557,40 @@ def scrape_state_firms(self, state_item):
         self.br.form.controls.remove(ctl)
 
         self.br.submit()
+{% endhighlight %}
+
+Now let's create a method to get the list of items from the State selection drop down menu. 
+We'll pass each of these items in turn to the `scrape_state_item()` we just went over:
+
+{% highlight python %}
+def get_state_items(self):
+    self.br.open(self.url)
+    self.br.select_form('aspnetForm')
+    items = self.br.form.find_control('ctl00$ContentPlaceHolder1$drpState').get_items()
+    return items
+{% endhighlight %}
+
+Finally, let's write a method to drive the whole scraping process by calling the methods we've 
+developed so far:
+
+{% highlight python %}
+def scrape(self):
+    '''
+    First we get a list of the states listed in the form select option
+    ctl00$ContentPlaceHolder1$drpState
+
+    Then we iterate through each state and submit the form for that state.
+        
+    For each state form submission we scrape all of the results via
+    scrape_firm_page() handling pagination in the process.
+    '''
+    state_items = self.get_state_items()
+    for state_item in state_items:
+        if len(state_item.name) < 1:
+            continue
+
+        print 'Scraping firms for %s' % state_item.attrs['label']
+        self.scrape_state_firms(state_item)
 {% endhighlight %}
 
 If you'd like to see the full implementation, the source code for this article is available on 
