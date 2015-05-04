@@ -336,6 +336,9 @@ Let's take stock of what we need our scraper to do to get all of the results for
 
 At this point we've got enough information about how the site works to write our scraper. 
 
+Here's the code we'll start out with. In this section, we'll add methods to implement the 
+scraping logic we discussed in the first part of this post.
+
 {% highlight python %}
 #!/usr/bin/env python                                                                                                                                                                
 
