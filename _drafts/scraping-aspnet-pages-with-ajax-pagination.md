@@ -314,6 +314,10 @@ As before, we'll have to create this key value pair in the scraper to make the p
 You can see that the `__EVENTTARGET` variable is set to the value of the argument passed to `__doPostBack()`
 in the page 2 link.
 
+There's also a control key value that's no longer in the listing if you compare this listing to the one
+ealier from the form submission, `btnSearch:Search`. That's the control for the Search input control. It 
+doesn't get sent for pagination.
+
 There's one more point we need to take note of. 
 
 The `__VIEWSTATE` variable is set to the same value we got back from the server when it sent the first 
@@ -336,7 +340,7 @@ Let's take stock of what we need our scraper to do to get all of the results for
 
 At this point we've got enough information about how the site works to write our scraper. 
 
-Here's the code we'll start out with. In this section, we'll add methods to implement the 
+Here's the code we'll start out with. As we go along, we'll add the code to implement the 
 scraping logic we discussed in the first part of this post.
 
 {% highlight python %}
@@ -380,6 +384,9 @@ We''ll pass that as the argument to mechanize's `select_form()` method.
 
 {% highlight python %}
 def scrape_state_firms(self, state_item):
+    '''
+    Scrape all of the firm listed for a given state 
+    '''
     self.br.open(self.url)
 
     s = BeautifulSoup(self.br.response().read())
@@ -387,10 +394,9 @@ def scrape_state_firms(self, state_item):
 
     self.br.select_form('aspnetForm')
     self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
-
 {% endhighlight %}
 
-Note that I save a copy of the form's HTML. That's so that later, when we do the pagination we still
+Note that I save a copy of the form's HTML. That's so that later, when we do the pagination, we still
 have a copy of the form to work with when we update the variables to get the next page of results.
 
 Now let's print out the controls that mechanize has picked up so far from selecting the form.
@@ -429,8 +435,8 @@ None:None (False)
 Note that two of the controls, `btnfrmSearch` and `btnAccept` didn't show up in the
 Developer Tools variable list earlier in this post. 
 
-The first control, `btnfrmSearch` is used for searching for a firm by name. The second control, 
-`btnAccept` is the Accept button a user clicks on to accept the site's Terms of Use (you probably 
+The first control, `btnfrmSearch`, is used for searching for a firm by name. The second control, 
+`btnAccept`, is the Accept button a user clicks on to accept the site's Terms of Use (you probably 
 saw this the first time you visited the site). We'll remove both of these controls before 
 submitting the form.
 
@@ -563,7 +569,7 @@ def scrape_state_firms(self, state_item):
 {% endhighlight %}
 
 Now let's create a method to get the list of items from the State selection drop down menu. 
-We'll pass each of these items in turn to the `scrape_state_item()` we just went over:
+We'll pass each of these items in turn to the `scrape_state_item()` method we just went over:
 
 {% highlight python %}
 def get_state_items(self):
@@ -585,7 +591,7 @@ def scrape(self):
     Then we iterate through each state and submit the form for that state.
         
     For each state form submission we scrape all of the results via
-    scrape_firm_page() handling pagination in the process.
+    scrape_state_firms() handling pagination in the process.
     '''
     state_items = self.get_state_items()
     for state_item in state_items:
