@@ -226,7 +226,7 @@ For now, let's look at the HTML results.
 </div>
 {% endhighlight %}
 
-I've pulled out one of the result links for the firm Kumin Associates. 
+I've pulled out one of the result links so we can see the format they use:
 
 {% highlight html %}
 <a id="ctl00_ContentPlaceHolder1_grdSearchResult_ctl03_hpFirmName" 
@@ -235,7 +235,7 @@ I've pulled out one of the result links for the firm Kumin Associates.
 </a>
 {% endhighlight %}
 
-We can match the href of these links using the regex 
+We can match the `href` of these links using the regex 
 
 `^frmFirmDetails\.aspx\?FirmID=([A-Z0-9-]+)$`
 
@@ -275,8 +275,7 @@ function __doPostBack(eventTarget, eventArgument) {
 }
 {% endhighlight %}
 
-So `__doPostBack()` sets the `__EVENTTARGET` variable to the argument passed to `__doPostBack()` and 
-submits the search form. 
+So `__doPostBack()` sets the `__EVENTTARGET` variable to the first argument passed and submits the search form. 
 
 For our scraper that means we can extract the argument to `__doPostBack()` with a regex like `__doPostBack\('([^']+)` 
 and then submit the form with `__EVENTTARGET` set to the value of the matched substring.
@@ -310,7 +309,7 @@ this time with the value
 
 `ctl00$ContentPlaceHolder1$pnlgrdSearchResult|ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03`
 
-As before, we'll have to create the key value pair in the scraper to make the pagination request work.
+As before, we'll have to create this key value pair in the scraper to make the pagination request work.
 
 You can see that the `__EVENTTARGET` variable is set to the value of the argument passed to `__doPostBack()`
 in the page 2 link.
@@ -335,7 +334,7 @@ Let's take stock of what we need our scraper to do to get all of the results for
 
 ## Implementation
 
-At this point we've got enough information about how the site works to write our scraper script. 
+At this point we've got enough information about how the site works to write our scraper. 
 
 ### Submitting the Form
 
@@ -363,8 +362,7 @@ def scrape_state_firms(self, state_item):
 Note that I save a copy of the form's HTML. That's so that later, when we do the pagination we still
 have a copy of the form to work with when we update the variables to get the next page of results.
 
-Now, at this point, if we print out the controls that mechanize has picked up from selecting the form
-it shows the following control key value pairs:
+Now let's print out the controls that mechanize has picked up so far from selecting the form.
 
 {% highlight python %}
 (Pdb) print '\n'.join(['%s:%s (%s)' % (c.name,c.value,c.disabled) for c in self.br.form.controls])
@@ -372,6 +370,8 @@ it shows the following control key value pairs:
 
 Note that I also print out whether or not a control is disabled. It shows up as True or False in 
 parentheses.
+
+Our print statement shows the following control key value pairs:
 
 {% highlight text %}
 __EVENTTARGET: (False)
@@ -465,13 +465,12 @@ the response is actually a string of `Length|Type|ID|Content `four-tuples, treat
 of key value pairs separated by `|` works and let's us use an ID as a key to get to its associated 
 Content.
 
-Preceding and succeeding this code snippet is the set up for the pagination (`pageno = 2`) which
-I'll go over next.
+This code snippet also contains the set up for the pagination (`pageno = 2`) which I'll go over next.
 
 ### Pagination
 
 For the pagination, we recreate the form from the HTML we copied ealier. Then we extract the value
-we need for the next page `__EVENTTARGET` from the next page's page number link. We update the form
+we need for the next page `__EVENTTARGET` from the next page number link. We update the form
 control values again, create the variables that aren't picked up from the form (`__ASYNCPOST` and
 `ctl100ScriptManager`) and set their values to match what we saw in the Developer Tools earlier.
 
