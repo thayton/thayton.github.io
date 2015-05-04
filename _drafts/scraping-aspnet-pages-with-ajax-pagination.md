@@ -371,6 +371,9 @@ if __name__ == '__main__':
 
 {% endhighlight %}
 
+The bulk of our scraping work will be done in a method named `scrape_state_firms()` that will
+scrape all of the results for a given state, handling pagination in the process. 
+
 ### Submitting the Form
 
 First, I'll go over selecting and submitting the form. If you inspect the HTML of the search form
@@ -602,8 +605,8 @@ def scrape(self):
         self.scrape_state_firms(state_item)
 {% endhighlight %}
 
-If you'd like to see the full implementation, the source code for this article is available on 
-[github](https://github.com/thayton/architectfinder).
+That's it! If you'd like to see the full implementation that you can experiment with yourself, 
+the source code for this article is available on [github](https://github.com/thayton/architectfinder).
 
 ## Shameless Plug
 
