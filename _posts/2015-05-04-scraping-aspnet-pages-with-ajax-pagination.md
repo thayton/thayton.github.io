@@ -572,7 +572,7 @@ def scrape_state_firms(self, state_item):
 {% endhighlight %}
 
 Now let's create a method to get the list of items from the State selection drop down menu. 
-We'll pass each of these items in turn to the `scrape_state_item()` method we just went over:
+We'll pass each of these items in turn to the `scrape_state_firms()` method we just went over:
 
 {% highlight python %}
 def get_state_items(self):
