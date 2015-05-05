@@ -1,0 +1,1 @@
+https://dryscrape.readthedocs.org/en/latest/
