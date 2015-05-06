@@ -75,8 +75,8 @@ First, click on the above link. You'll be presented with a modal for their Terms
 
 You'll need to click on the `Ok` button to continue on to the main site. Before you do that
 though, inspect the `Ok` button in Developer Tools and you'll see that it has the following
-`id` attribute: `ctl00_ContentPlaceHolder1_btnAccept`. We'll use that id to accept the ToS
-in our script.
+`id` attribute: `ctl00_ContentPlaceHolder1_btnAccept`. We'll use that id when accepting the 
+ToS in our script.
 
 After you accept the ToS agreement, you'll be presented with the following form.
 
@@ -155,6 +155,17 @@ def scrape(self):
                 print 'firm name: ', a.text
                 print 'firm url: ', urlparse.urljoin(self.driver.current_url, a['href'])
                 print 
+{% endhighlight %}
+
+![Pager](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/pager.png)
+
+Note that the currently selected page has it's background color set in the style
+attribute for the link. We'll use this fact to determine once the next page of results
+has finished loading.
+
+{% highlight html %}
+<a style="display:inline-block;width:20px;">1</a>
+<a style="display:inline-block;background-color:#E2E2E2;width:20px;">2</a>
 {% endhighlight %}
 
 {% highlight python %}
