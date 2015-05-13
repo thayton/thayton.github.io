@@ -8,7 +8,7 @@ over the nitty-gritty details of how to scrape an ASP.NET AJAX page using Python
 Since mechanize can't process Javascript, we had to understand the underlying data formats used 
 when sending form submissions, parsing the server's response, and how pagination is handled.
 In this post, I'll show how much easier it is to scrape the exact same site when we use Selenium
-in conjunction with PhantomJS.
+to drive PhantomJS.
 
 ## Background
 
@@ -108,7 +108,7 @@ Inspect this gif in the Develop Tools and you'll find it in the following div.
 </div>
 {% endhighlight %}
 
-The div's style attribute is set to `display: none;` once the results have finished loading.
+The div's `style` attribute gets set to `display: none;` once the results have finished loading.
 We'll use this fact to detect when the results are ready to parse in our script.
 
 Let's add a `scrape()` method to our class that does everything we've seen so far.
@@ -137,6 +137,19 @@ def scrape(self):
         wait.until(lambda driver: driver.find_element_by_id('ctl00_ContentPlaceHolder1_uprogressSearchResults').is_displayed() == False)
 {% endhighlight %}
 
+We iterate through each option in the state selection dropdown, submitting the form for each possible 
+state value. After the form has been submitted, we must wait for the results to load. To do this, we use 
+[WebDriverWait](http://selenium-python.readthedocs.org/en/latest/waits.html) to locate the div containing 
+the loading gif and wait until that div is no longer being displayed.
+
+{% highlight python %}
+# Wait for results to finish loading
+wait = WebDriverWait(self.driver, 10)
+wait.until(lambda driver: driver.find_element_by_id('ctl00_ContentPlaceHolder1_uprogressSearchResults').is_displayed() == False)
+{% endhighlight %}
+
+Now let's move on to extracting the results. The contination of our `scrape()` method is shown below.
+
 {% highlight python %}
 def scrape(self):
     ...
@@ -157,16 +170,46 @@ def scrape(self):
                 print 
 {% endhighlight %}
 
+After the results have finished loading, we feed the rendered page into BeautifulSoup. Then 
+we extract the name and links for each architecture firm in the results. As I went over in 
+my [last post]({% post_url 2015-05-04-scraping-aspnet-pages-with-ajax-pagination %}), the links
+have the following format:
+
+{% highlight html %}
+<a id="ctl00_ContentPlaceHolder1_grdSearchResult_ctl03_hpFirmName" 
+   href="frmFirmDetails.aspx?FirmID=F12ED5B3-88A1-49EC-96BC-ACFAA90C68F1">
+   Kumin Associates, Inc.
+</a>
+{% endhighlight %}
+
+We find the links by matching on the `href` and `id` attributes. The `href` of these links is 
+matched using the regex 
+
+`^frmFirmDetails\.aspx\?FirmID=([A-Z0-9-]+)$`
+
+and the `id` attribute can be matched using the regex `hpFirmName$`.
+
+Finally, let's examine how to handle pagination. Below is a screenshot of the pager that
+shows up at the bottom of the results.
+
 ![Pager](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/pager.png)
 
-Note that the currently selected page has it's background color set in the style
-attribute for the link. We'll use this fact to determine once the next page of results
-has finished loading.
+We need to click on each page number link, starting with page 2, in order to get all of 
+the  results. As before, we also need a way of determining when the results have finished 
+laoding after we have clicked a page number link.
+
+Note that in the screenshot above the currently selected page (2) has it's background color 
+set differently than the other pages. If we look at the style attribute for the selected page 
+we can see that the selected page has its background color set while all of the other non-selected 
+pages do not. 
 
 {% highlight html %}
 <a style="display:inline-block;width:20px;">1</a>
 <a style="display:inline-block;background-color:#E2E2E2;width:20px;">2</a>
 {% endhighlight %}
+
+We'll use this fact to determine once the next page of results has finished loading. Here's the
+rest of the `scrape()` method that handles pagination.
 
 {% highlight python %}
 def scrape(self):
@@ -201,3 +244,23 @@ def scrape(self):
 
     self.driver.quit()
 {% endhighlight %}
+
+First we find the next page number link using the xpath expression ``"//a[text()='%d']" % pageno``. 
+If no such link is found then we must already be on the last page. Otherwise, we click the link
+and wait for the next page results to finish loading.
+
+To do so, we once again use ``WebDriverWait``, this time with the following predicate function:
+
+{% highlight python %}
+def next_page(driver):
+    '''
+    Wait until the next page background color changes indicating
+    that it is now the currently selected page
+    '''
+    style = driver.find_element_by_xpath("//a[text()='%d']" % pageno).get_attribute('style')
+    return 'background-color' in style
+{% endhighlight %}
+
+As discussed earlier, we detect when the next page of results has finished loading by waiting
+until the next page link has its background color set in its style attribute to indicate that
+it is now the current page.
