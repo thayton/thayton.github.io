@@ -7,12 +7,12 @@ In my [last post]({% post_url 2015-05-04-scraping-aspnet-pages-with-ajax-paginat
 over the nitty-gritty details of how to scrape an ASP.NET AJAX page using Python [mechanize](http://wwwsearch.sourceforge.net/mechanize/). 
 Since mechanize can't process Javascript, we had to understand the underlying data formats used 
 when sending form submissions, parsing the server's response, and how pagination is handled.
-In this post, I'll show how much easier it is to scrape the exact same site when we use Selenium
-to drive PhantomJS.
+In this post, I'll show how much easier it is to scrape the exact same site when we use [Selenium](https://selenium-python.readthedocs.org/)
+to drive [PhantomJS](http://phantomjs.org/).
 
 ## Background
 
-The site I'll use in this post is the same as the one I used in my last post, the search form 
+The site I use in this post is the same as the one I used in my last post: the search form 
 provided by [The American Institute of Architects](http://www.aia.org/) for finding architecture 
 firms in the US. 
 
@@ -21,9 +21,7 @@ firms in the US.
 Once again, I'll show to scrape the names and links of the firms listed for all of the states
 in the form.
 
-First let's set up a virtual environment to run the code in, install PhantomJS, and install the
-selenium bindings for Python. We'll also need to install BeautifulSoup since that's what I'll
-use to parse the HTML after it's been rendered in PhantomJS.
+First let's set up our environment:
 
 {% highlight bash %}
 $ mkdir scraper && cd scraper
@@ -66,10 +64,13 @@ if __name__ == '__main__':
     scraper.scrape()        
 {% endhighlight %}
 
-Next, I'm going to go over side-by-side how to submit the search form in the browser while 
-I also show how to replicate this behavior in our script.
+### Submitting the Form
 
-First, click on the above link. You'll be presented with a modal for their Terms of Service.
+Let's get started. Click on the Architect Finder link:
+
+[http://architectfinder.aia.org/frmSearch.aspx](http://architectfinder.aia.org/frmSearch.aspx)
+
+You'll be presented with a modal for their Terms of Service.
 
 ![TOS](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/tos.png)
 
@@ -86,19 +87,19 @@ Click on the state selector and you'll get a dropdown menu like the following:
 
 ![State Select](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/state_select.png)
 
-If you look at the HTML associated with this dropdown, you'll see that it has its `id` attribute
+If you look at the HTML associated with this dropdown, you'll see that its `id` attribute is
 set to `ctl00_ContentPlaceHolder1_drpState`:
 
 {% highlight html %}
 <select name="ctl00$ContentPlaceHolder1$drpState" id="ctl00_ContentPlaceHolder1_drpState"
 {% endhighlight %}
 
-Next, select 'Alaska' from the dropdown and then click the Search button. You'll see a loader gif 
-appear while the results are being retrieved. 
+Next, select 'Alaska' from the dropdown and then click the Search button. A loader gif will appear 
+while the results are being retrieved. 
 
 ![Loading Gif](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/loading.gif)
 
-Inspect this gif in the Develop Tools and you'll find it in the following div.
+Inspect this gif in Developer Tools and you'll find it in the following div:
 
 {% highlight html %}
 <div id="ctl00_ContentPlaceHolder1_uprogressSearchResults" style="display: none;">
@@ -109,9 +110,9 @@ Inspect this gif in the Develop Tools and you'll find it in the following div.
 {% endhighlight %}
 
 The div's `style` attribute gets set to `display: none;` once the results have finished loading.
-We'll use this fact to detect when the results are ready to parse in our script.
+We'll use this fact to detect when the results are ready to be parsed in our script.
 
-Let's add a `scrape()` method to our class that does everything we've seen so far.
+Let's add a `scrape()` method to our class that does everything we've gone over so far.
 
 {% highlight python %}
 def scrape(self):
@@ -148,7 +149,9 @@ wait = WebDriverWait(self.driver, 10)
 wait.until(lambda driver: driver.find_element_by_id('ctl00_ContentPlaceHolder1_uprogressSearchResults').is_displayed() == False)
 {% endhighlight %}
 
-Now let's move on to extracting the results. The contination of our `scrape()` method is shown below.
+### Extracting the Results
+
+Now let's move on to extracting the results. Our `scrape()` method is continued below.
 
 {% highlight python %}
 def scrape(self):
@@ -170,10 +173,10 @@ def scrape(self):
                 print 
 {% endhighlight %}
 
-After the results have finished loading, we feed the rendered page into BeautifulSoup. Then 
-we extract the name and links for each architecture firm in the results. As I went over in 
-my [last post]({% post_url 2015-05-04-scraping-aspnet-pages-with-ajax-pagination %}), the links
-have the following format:
+After the results have finished loading, we feed the rendered page into [BeautifulSoup](http://www.crummy.com/software/BeautifulSoup/). Then 
+we extract the name and link for each architecture firm in the results. As I went over in 
+my [last post]({% post_url 2015-05-04-scraping-aspnet-pages-with-ajax-pagination %}), each link
+has the following format:
 
 {% highlight html %}
 <a id="ctl00_ContentPlaceHolder1_grdSearchResult_ctl03_hpFirmName" 
@@ -189,16 +192,18 @@ matched using the regex
 
 and the `id` attribute can be matched using the regex `hpFirmName$`.
 
+### Pagination
+
 Finally, let's examine how to handle pagination. Below is a screenshot of the pager that
 shows up at the bottom of the results.
 
 ![Pager](/assets/using-selenium-to-scrape-aspnet-pages-with-ajax-pagination/pager.png)
 
-We need to click on each page number link, starting with page 2, in order to get all of 
-the  results. As before, we also need a way of determining when the results have finished 
-laoding after we have clicked a page number link.
+In order to get all of the results, we need to click on each page number link, starting with 
+page 2. Same as before, we also need a way of determining when the results have finished 
+loading after clicking a page number link.
 
-Note that in the screenshot above the currently selected page (2) has it's background color 
+Note that in the screenshot above the currently selected page (2) has its background color 
 set differently than the other pages. If we look at the style attribute for the selected page 
 we can see that the selected page has its background color set while all of the other non-selected 
 pages do not. 
@@ -249,7 +254,8 @@ First we find the next page number link using the xpath expression ``"//a[text()
 If no such link is found then we must already be on the last page. Otherwise, we click the link
 and wait for the next page results to finish loading.
 
-To do so, we once again use ``WebDriverWait``, this time with the following predicate function:
+To wait for the results to load we once again use ``WebDriverWait``, this time with the following 
+predicate function:
 
 {% highlight python %}
 def next_page(driver):
@@ -261,6 +267,18 @@ def next_page(driver):
     return 'background-color' in style
 {% endhighlight %}
 
-As discussed earlier, we detect when the next page of results has finished loading by waiting
-until the next page link has its background color set in its style attribute to indicate that
-it is now the current page.
+If you put a print statement in the `next_page` function, you'll see it getting called multiple
+times until it returns `True`.
+
+### Conclusion
+
+That's it! If you compare this scraper to the one using mechanize in my previous post, you'll see
+how much shorter and simpler it is. You can view the source for both scrapers on github at the 
+following link:
+
+[https://github.com/thayton/architectfinder](https://github.com/thayton/architectfinder)
+
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+for a free quote.
