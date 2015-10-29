@@ -1,0 +1,1 @@
+Write how to handle auto file download with Selenium and Browser(PhantomJS/Chrome/Firefox)
