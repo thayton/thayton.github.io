@@ -1,5 +1,7 @@
 http://www.thomsonlakes.co.uk/
 http://www.crystalsummer.co.uk/
+https://es.warrants.com/
+https://www.airtours.co.uk/ (Click Select Multiple)
 
 These sites use wicket-ajax.js which is difficult to scrape.
 
