@@ -220,39 +220,28 @@ def select_project_option(self, value, dowait=True):
     return self.get_project_select()
 {% endhighlight %}
 
-Note that for both states and districts we are repeating the following pattern:
+Note that for both the states and districts the code is repeating the following pattern:
 
 - Select an option
-- Wait for next select element's options to load
+- Wait for some other select element's options to load
 
 We can refactor this pattern out into something more generic. 
 
-The following function looks up an element given an xpath and then returns a function that 
-will wait for that element to become stale in the current document. 
+The *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
+can all be implemented using a generic *get_select* method that takes the xpath of the 
+select element as an argument.
 
 {% highlight python %}
-def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
-    elem = driver.find_element_by_xpath(waitfor_elem_xpath)
-
-    def elem_updated(driver):
-        try:
-            elem.text
-        except StaleElementReferenceException:
-            return True
-        except:
-            pass
-
-        return False
-
-    return lambda driver: elem_updated(driver)
+def get_select(self, xpath):
+    select_elem = self.driver.find_element_by_xpath(xpath)
+    select = Select(select_elem)
+    return select
 {% endhighlight %}
 
-Now we don't have to have three different methods (*select\_state\_option*, *select\_district\_option*, and *select\_project\_option*)
-that all repeat the same basic pattern. 
-
-Instead, we can make a generic *select_option* method that selects an option from 
-a dropdown and then waits for another dropdown select finished loading by waiting
-for it to become stale.
+Similarly, the *select\_state\_option*, *select\_district\_option*, and *select\_project\_option*
+methods can be replaced by a generic *select\_option* method that takes the xpath of a
+select element, the option value to choose, and the xpath of another select element whose options
+will by dynamicly updated once we make the current selection.
 
 {% highlight python %}
 def select_option(self, xpath, value, waitfor_elem_xpath=None):
@@ -272,8 +261,44 @@ def select_option(self, xpath, value, waitfor_elem_xpath=None):
     return self.get_select(xpath)
 {% endhighlight %}
 
-We can refactor the *states()*, *districts()* and *projects()* generators using this
-new method:
+The *select_option* method uses *make\_waitfor\_elem\_updated\_predicate* to generate 
+a function that will wait for an element to become stale in the current document. 
+
+{% highlight python %}
+def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
+    elem = driver.find_element_by_xpath(waitfor_elem_xpath)
+
+    def elem_updated(driver):
+        try:
+            elem.text
+        except StaleElementReferenceException:
+            return True
+        except:
+            pass
+
+        return False
+
+    return lambda driver: elem_updated(driver)
+{% endhighlight %}
+
+So now we can do something like the following to select a state and wait
+for the district options to load:
+
+{% highlight python %}
+# '35' is the option value of the state "Andaman & Nicobar Islands"
+self.select_option(
+    '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]',
+    '35',
+    '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+)
+{% endhighlight %}
+
+Now let's revisit the *states()*, *districts()* and *projects()* generators. They 
+can all be refactored since they also duplicate a common pattern:
+
+- Get a reference to a select element
+- Generate its list of values
+- Iterate through those values
 
 {% highlight python %}
 def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
