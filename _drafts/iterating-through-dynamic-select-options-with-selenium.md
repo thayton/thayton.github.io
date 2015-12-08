@@ -5,10 +5,12 @@ title: Iterating through Dynamic Select Options with Selenium
 
 In this post I'll show how to iterate through all the possible values in a form
 that uses [select elements](http://www.w3schools.com/tags/tag_select.asp) whose 
-option values are dynamically genereated. I'll use [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
+option values are dynamically generated. I'll use [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
 and show how Selenium can be used to wait for the option values to load. I'll 
 wrap up the post by showing how we can refactor the code into a more generic solution, 
 which will be useful since this use-case arises a lot in scraping.
+
+## Background 
 
 The site I'll use in today's example is at the following URL:
 
@@ -56,6 +58,8 @@ for each state
     for each project
       print state, district, project  
 ```
+
+## Implementation
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -170,7 +174,10 @@ The method determines when the district options have loaded by:
 
 Essentially, we get a reference to the district select element *before* it has been 
 dynamically updated, and then wait for that reference to become stale *after*
-we select a state.
+we select a state and trigger the update.
+
+We'll repeat this same basic pattern for the district and project select
+elements. 
 
 {% highlight python %}
 #--- DISTRICT --------------------------------------------------
@@ -206,7 +213,12 @@ def select_district_option(self, value, dowait=True):
         wait.until(district_select_updated)
 
     return self.get_district_select()
+{% endhighlight %}
 
+The project dropdown doesn't actually trigger any updates when we 
+select a value, so its implementation is very simple.
+
+{% highlight python %}
 #--- PROJECT ---------------------------------------------------
 def get_project_select(self):
     path = '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]'
@@ -220,10 +232,202 @@ def select_project_option(self, value, dowait=True):
     return self.get_project_select()
 {% endhighlight %}
 
-Note that for both the states and districts the code is repeating the following pattern:
+Now here it is all together:
+
+{% highlight python %}
+#!/usr/bin/env python
+
+import sys
+import signal
+
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import StaleElementReferenceException
+
+def sigint(signal, frame):
+    sys.exit(0)
+
+class Scraper(object):
+    def __init__(self):
+        self.url = 'http://icds-wcd.nic.in/icds/icdsawc.aspx'
+        self.driver = webdriver.PhantomJS()
+        self.driver.set_window_size(1120, 550)
+
+    #--- STATE -----------------------------------------------------
+    def get_state_select(self):
+        path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
+        state_select_elem = self.driver.find_element_by_xpath(path)
+        state_select = Select(state_select_elem)
+        return state_select
+
+    def select_state_option(self, value, dowait=True):
+        '''
+        Select state value from dropdown. Wait until district dropdown
+        has loaded before returning.
+        '''
+        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+        district_select_elem = self.driver.find_element_by_xpath(path)
+
+        def district_select_updated(driver):
+            try:
+                district_select_elem.text
+            except StaleElementReferenceException:
+                return True
+            except:
+                pass
+
+            return False
+
+        state_select = self.get_state_select()
+        state_select.select_by_value(value)
+
+        if dowait:
+            wait = WebDriverWait(self.driver, 10)
+            wait.until(district_select_updated)
+
+        return self.get_state_select()
+
+    #--- DISTRICT --------------------------------------------------
+    def get_district_select(self):
+        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+        district_select_elem = self.driver.find_element_by_xpath(path)
+        district_select = Select(district_select_elem)
+        return district_select
+
+    def select_district_option(self, value, dowait=True):
+        '''
+        Select district value from dropdown. Wait until district dropdown
+        has loaded before returning.
+        '''
+        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+        district_select_elem = self.driver.find_element_by_xpath(path)
+
+        def district_select_updated(driver):
+            try:
+                district_select_elem.text
+            except StaleElementReferenceException:
+                return True
+            except:
+                pass
+
+            return False
+
+        district_select = self.get_district_select()
+        district_select.select_by_value(value)
+
+        if dowait:
+            wait = WebDriverWait(self.driver, 10)
+            wait.until(district_select_updated)
+
+        return self.get_district_select()
+
+    #--- PROJECT ---------------------------------------------------
+    def get_project_select(self):
+        path = '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]'
+        project_select_elem = self.driver.find_element_by_xpath(path)
+        project_select = Select(project_select_elem)
+        return project_select
+
+    def select_project_option(self, value, dowait=True):
+        project_select = self.get_project_select()
+        project_select.select_by_value(value)
+        return self.get_project_select()
+
+    def load_page(self):
+        self.driver.get(self.url)
+
+        def page_loaded(driver):
+            path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
+            return driver.find_element_by_xpath(path)
+
+        wait = WebDriverWait(self.driver, 10)
+        wait.until(page_loaded)            
+        
+    def scrape(self):
+        def states():
+            state_select = self.get_state_select()
+            state_select_option_values = [ 
+                '%s' % o.get_attribute('value') 
+                for o 
+                in state_select.options[1:]
+            ]
+
+            for v in state_select_option_values:
+                state_select = self.select_state_option(v)
+                yield state_select.first_selected_option.text
+
+        def districts():
+            district_select = self.get_district_select()
+            district_select_option_values = [ 
+                '%s' % o.get_attribute('value') 
+                for o 
+                in district_select.options 
+                if o.text != '-Select-' 
+            ]
+
+            for v in district_select_option_values:
+                district_select = self.select_district_option(v)
+                yield district_select.first_selected_option.text
+            
+        def projects():
+            project_select = self.get_project_select()
+            project_select_option_values = [ 
+                '%s' % o.get_attribute('value') 
+                for o 
+                in project_select.options[1:]
+            ]
+
+            for v in project_select_option_values:
+                project_select = self.select_project_option(v)
+                yield project_select.first_selected_option.text
+
+        self.load_page()
+
+        for state in states():
+            print state
+            for district in districts():
+                print 2*' ', district
+                for project in projects():
+                    print 4*' ', project
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, sigint)
+    scraper = Scraper()
+    scraper.scrape()
+{% endhighlight %}
+
+Let's try running it:
+
+```
+$ ./v1.scraper.py 
+Andaman & Nicobar Islands
+   Nicobars
+   North  & Middle Andaman
+   South Andaman
+Andhra Pradesh
+   Adilabad
+     Adilabad U
+     Asifabad
+     Bellampally
+     Boath
+     Chennur
+     JAINOOR
+     Kaghaznagar
+     Khanapur
+```
+
+## Refactoring
+
+Note that in the implementation above, both the states and districts code is 
+repeating the following pattern:
 
 - Select an option
 - Wait for some other select element's options to load
+
+This pattern comes up a lot in forms with select elements whose option values are dynamically
+genereated.
 
 We can refactor this pattern out into something more generic. 
 
@@ -318,6 +522,9 @@ def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
     return lambda: next_option(xpath, waitfor_elem_xpath)
 {% endhighlight %}
 
+Now we can make generators for the states, districts and projects
+with just a few lines of code:
+
 {% highlight python %}
 states = self.make_select_option_iterator(
     '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]',
@@ -333,5 +540,121 @@ projects = self.make_select_option_iterator(
     '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]',
     None
 )
+{% endhighlight %}
+
+Our implementation is now much more concise:
+
+{% highlight python %}
+#!/usr/bin/env python
+
+import sys
+import signal
+
+from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.support.ui import Select
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.common.exceptions import StaleElementReferenceException
+
+def sigint(signal, frame):
+    sys.exit(0)
+
+def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
+    elem = driver.find_element_by_xpath(waitfor_elem_xpath)
+
+    def elem_updated(driver):
+        try:
+            elem.text
+        except StaleElementReferenceException:
+            return True
+        except:
+            pass
+
+        return False
+
+    return lambda driver: elem_updated(driver)
+
+class Scraper(object):
+    def __init__(self):
+        self.url = 'http://icds-wcd.nic.in/icds/icdsawc.aspx'
+        self.driver = webdriver.PhantomJS()
+        self.driver.set_window_size(1120, 550)
+
+    def get_select(self, xpath):
+        select_elem = self.driver.find_element_by_xpath(xpath)
+        select = Select(select_elem)
+        return select
+
+    def select_option(self, xpath, value, waitfor_elem_xpath=None):
+        if waitfor_elem_xpath:
+            func = make_waitfor_elem_updated_predicate(
+                self.driver, 
+                waitfor_elem_xpath
+            )
+
+        select = self.get_select(xpath)
+        select.select_by_value(value)
+
+        if waitfor_elem_xpath:
+            wait = WebDriverWait(self.driver, 10)
+            wait.until(func)
+
+        return self.get_select(xpath)
+
+    def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
+        def next_option(xpath, waitfor_elem_xpath):
+            select = self.get_select(xpath)
+            select_option_values = [ 
+                '%s' % o.get_attribute('value') 
+                for o 
+                in select.options 
+                if o.text != '-Select-'
+            ]
+
+            for v in select_option_values:
+                select = self.select_option(xpath, v, waitfor_elem_xpath)
+                yield select.first_selected_option.text
+
+        return lambda: next_option(xpath, waitfor_elem_xpath)
+
+    def load_page(self):
+        self.driver.get(self.url)
+
+        def page_loaded(driver):
+            path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
+            return driver.find_element_by_xpath(path)
+
+        wait = WebDriverWait(self.driver, 10)
+        wait.until(page_loaded)            
+
+    def scrape(self):
+        states = self.make_select_option_iterator(
+            '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]',
+            '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+        )
+
+        districts = self.make_select_option_iterator(
+            '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]',
+            '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+        )
+
+        projects = self.make_select_option_iterator(
+            '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]',
+            None
+        )
+
+        self.load_page()
+
+        for state in states():
+            print state
+            for district in districts():
+                print 2*' ', district
+                for project in projects():
+                    print 4*' ', project
+
+if __name__ == '__main__':
+    signal.signal(signal.SIGINT, sigint)
+    scraper = Scraper()
+    scraper.scrape()
 {% endhighlight %}
 
