@@ -3,12 +3,12 @@ layout: post
 title: Iterating through Dynamic Select Options with Selenium
 ---
 
-In this post I'll show how to iterate through all the possible values in a form
-that uses [select elements](http://www.w3schools.com/tags/tag_select.asp) whose 
+In this post I'll show how to iterate through all of the dropdown menus in a form
+that uses [SELECT elements](http://www.w3schools.com/tags/tag_select.asp) whose 
 option values are dynamically generated. I'll use [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
 and show how Selenium can be used to wait for the option values to load. I'll 
 wrap up the post by showing how we can refactor the code into a more generic solution, 
-which will be useful since this use-case arises a lot in scraping.
+which will be useful since this use-case arises frequently in scraping.
 
 ## Background 
 
@@ -34,19 +34,20 @@ there is only one option: "-Select-"
 ![District Empty](/assets/icds/3.png)
 
 In this form, the options in the *Select District* dropdown aren't populated 
-until a state has been chosen. This means the range of possible 
-values in the district select element will always depend on the value of the 
-current state selection.
+until a state has been chosen. This means that the range of possible 
+values in the district SELECT element will always depend on the current value 
+of the state selection.
 
-Same thing goes for the *Select Project* dropdown.
+Same thing goes for the *Select Project* dropdown:
 
 ![Project Empty](/assets/icds/4.png)
 
 Its list of options is only filled *after* a district has been chosen.
 
-To summarize: first we select a *state*. That triggers an update which 
-causes the *district* options to load. Once we select a *district*, the 
-*project* select options are dynamically loaded.
+To summarize how this form operates: first we select a *state*. That triggers 
+an update which causes the *district* options to load. Then, once we select 
+a *district*, another update is triggered and the *project* values are dynamically 
+loaded.
 
 With that in mind, here's the pseudocode sketch of the solution we will develop. 
 
@@ -94,8 +95,8 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
-First we create a *load\_page()* method which retrieves form page and 
-waits until the *state* select element is rendered before returning:
+First we create a *load\_page()* method which retrieves the form page 
+and waits until the *state* SELECT element is rendered before returning:
 
 {% highlight python %}
 def load_page(self):
@@ -127,7 +128,7 @@ def scrape(self):
 {% endhighlight %}
 
 The *scrape()* method uses generators to iterate through all of the
-option values for the *state*, *district* and *project* select elements.
+option values for the *state*, *district* and *project* SELECT elements.
 
 Let's take a look at the *states()* generator:
 
@@ -146,7 +147,7 @@ def states():
 {% endhighlight %}
 
 The *states()* function generates a list of all the option values contained
-in the state select element. Then it uses *yield* to allow the caller to iterate
+in the state SELECT element. Then it uses *yield* to allow the caller to iterate
 through that list.
 
 The *districts()* and *projects()* generators are implemented the same way:
@@ -181,12 +182,12 @@ def projects():
 There are two types of helper methods used by the generators.
 Both types follow the same patterns:
 
-- Get a reference to a select element
+- Get a reference to a SELECT element
 - Select one of the options
 
-Let's look at the first type: methods used to get a reference to a select
+Let's look at the first type: methods used to get a reference to a SELECT
 element. Here is the code for *get\_state\_select()* which returns a reference
-to the state select element:
+to the state SELECT element:
 
 {% highlight python %}
 def get_state_select(self):
@@ -199,9 +200,9 @@ def get_state_select(self):
 We look up a reference to an element given its xpath. Then we use 
 the [Select](https://selenium.googlecode.com/git/docs/api/py/webdriver_support/selenium.webdriver.support.select.html)
 constructor to create an instance of the WebDriver Select support 
-class which is used to interact with select elements.
+class which is used to interact with SELECT elements.
 
-We get references to the district and project select elements the
+We get references to the district and project SELECT elements the
 same way:
 
 {% highlight python %}
@@ -253,16 +254,16 @@ def select_state_option(self, value, dowait=True):
 This method selects a state value and then waits for the district options
 to load. It determines when the district options have loaded by:
 
-1. Getting a reference to the district select element
+1. Getting a reference to the district SELECT element
 2. Selecting an option in the state select dropdown
-3. Waiting for the district select element from step 1 to return a StaleElementReferenceException
+3. Waiting for the district SELECT element from step 1 to return a *StaleElementReferenceException*
    when we reference its *text* attribute.
 
-Essentially, we get a reference to the district select element *before* it has been 
-dynamically updated, and then wait for that reference to become stale *after*
-we select a state and trigger the update.
+Essentially, we get a reference to the *district* SELECT element in the [DOM](http://www.w3.org/DOM/) *before* 
+it has been dynamically updated, and then wait for that reference to become stale 
+*after* we select a state and trigger the update to the DOM.
 
-We'll repeat this same pattern for the district and project select elements:
+We'll repeat this same pattern for the district and project SELECT elements:
 
 {% highlight python %}
 def select_district_option(self, value, dowait=True):
@@ -330,16 +331,16 @@ If you take a look at the code for selecting option values for the state and dis
 methods are repeating the following pattern:
 
 - Select an option
-- Wait for some other select element's options to load
+- Wait for some other SELECT element's options to load
 
-This pattern comes up a lot in forms with select elements whose option values are dynamically
+This pattern comes up a lot in forms with SELECT elements whose option values are dynamically
 genereated.
 
 We can refactor this pattern out into something more generic. 
 
 The *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
 can all be implemented using a generic *get_select* method that takes the xpath of the 
-select element as an argument.
+SELECT element as an argument.
 
 {% highlight python %}
 def get_select(self, xpath):
@@ -350,7 +351,7 @@ def get_select(self, xpath):
 
 Similarly, the *select\_state\_option*, *select\_district\_option*, and *select\_project\_option*
 methods can be replaced by a generic *select\_option* method that takes the xpath of a
-select element, the option value to choose, and the xpath of another select element whose options
+SELECT element, the option value to choose, and the xpath of another SELECT element whose options
 will by dynamicly updated once we make the current selection.
 
 {% highlight python %}
@@ -391,7 +392,7 @@ def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
     return lambda driver: elem_updated(driver)
 {% endhighlight %}
 
-So now we can do something like the following to select a state and wait
+Now we can do something like the following to select a state and then wait
 for the district options to load:
 
 {% highlight python %}
@@ -406,7 +407,7 @@ self.select_option(
 Now let's revisit the *states()*, *districts()* and *projects()* generators. They 
 can all be refactored since they also follow a common pattern:
 
-- Get a reference to a select element
+- Get a reference to a SELECT element
 - Generate its list of values
 - Iterate through those values
 
