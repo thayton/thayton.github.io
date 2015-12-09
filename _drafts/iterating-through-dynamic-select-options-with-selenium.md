@@ -44,6 +44,10 @@ Same thing goes for the *Select Project* dropdown.
 
 Its list of options is only filled *after* a district has been chosen.
 
+To summarize: first we select a *state*. That triggers an update which 
+causes the *district* options to load. Once we select a *district*, the 
+*project* select options are dynamically loaded.
+
 With that in mind, here's the pseudocode sketch of the solution we will develop. 
 
 ```
@@ -60,6 +64,8 @@ for each state
 ```
 
 ## Implementation
+
+Let's begin. Here's the boilerplate for our scraper:
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -88,6 +94,9 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
+First we create a *load\_page()* method which retrieves form page and 
+waits until the *state* select element is rendered before returning:
+
 {% highlight python %}
 def load_page(self):
     self.driver.get(self.url)
@@ -99,6 +108,9 @@ def load_page(self):
     wait = WebDriverWait(self.driver, 10)
     wait.until(page_loaded)            
 {% endhighlight %}
+
+Next, we write a *scrape()* method which implements the pseudocode I
+sketched above:
 
 {% highlight python %}
 def scrape(self):
@@ -114,7 +126,10 @@ def scrape(self):
                 print 4*' ', project
 {% endhighlight %}
 
-First let's take a look at the states generator:
+The *scrape()* method uses generators to iterate through all of the
+option values for the *state*, *district* and *project* select elements.
+
+Let's take a look at the *states()* generator:
 
 {% highlight python %}
 def states():
@@ -130,8 +145,8 @@ def states():
         yield state_select.first_selected_option.text
 {% endhighlight %}
 
-The *states()* function generates a list of all the possible option values for
-the state select element. Then it uses *yield* to allow the caller to iterate
+The *states()* function generates a list of all the option values contained
+in the state select element. Then it uses *yield* to allow the caller to iterate
 through that list.
 
 The *districts()* and *projects()* generators are implemented the same way:
@@ -163,14 +178,14 @@ def projects():
         yield project_select.first_selected_option.text
 {% endhighlight %}
 
-There are two types of helper functions used by the generators.
-They both follow the same pattern:
+There are two types of helper methods used by the generators.
+Both types follow the same patterns:
 
 - Get a reference to a select element
 - Select one of the options
 
-Let's look at the first type: functions used to get a reference to a select
-element. Here is the code for *get\_state\_select* which returns a reference
+Let's look at the first type: methods used to get a reference to a select
+element. Here is the code for *get\_state\_select()* which returns a reference
 to the state select element:
 
 {% highlight python %}
@@ -203,8 +218,8 @@ def get_project_select(self):
     return project_select
 {% endhighlight %}
 
-Next let's take a look at the functions used to select an option.
-First we'll examine *select\_state\_option*:
+Next let's take a look at the methods used to select an option.
+First we'll examine *select\_state\_option()*:
 
 {% highlight python %}
 def select_state_option(self, value, dowait=True):
@@ -235,7 +250,8 @@ def select_state_option(self, value, dowait=True):
     return self.get_state_select()
 {% endhighlight %}
 
-The method determines when the district options have loaded by:
+This method selects a state value and then waits for the district options
+to load. It determines when the district options have loaded by:
 
 1. Getting a reference to the district select element
 2. Selecting an option in the state select dropdown
@@ -246,8 +262,7 @@ Essentially, we get a reference to the district select element *before* it has b
 dynamically updated, and then wait for that reference to become stale *after*
 we select a state and trigger the update.
 
-We'll repeat this same basic pattern for the district and project select
-elements. 
+We'll repeat this same pattern for the district and project select elements:
 
 {% highlight python %}
 def select_district_option(self, value, dowait=True):
@@ -278,11 +293,10 @@ def select_district_option(self, value, dowait=True):
     return self.get_district_select()
 {% endhighlight %}
 
-The project dropdown doesn't actually trigger any updates when we 
-select a value, so its implementation is very simple.
+The project dropdown doesn't trigger any updates when we select 
+a value, so its implementation is very simple:
 
 {% highlight python %}
-#--- PROJECT ---------------------------------------------------
 def select_project_option(self, value, dowait=True):
     project_select = self.get_project_select()
     project_select.select_by_value(value)
@@ -311,8 +325,9 @@ Andhra Pradesh
 
 ## Refactoring
 
-Note that in the implementation above, both the states and districts code is 
-repeating the following pattern:
+If you take a look at the code for selecting option values for the state and district 
+(*select\_state\_option* and *select\_district\_option*) you might notice that both 
+methods are repeating the following pattern:
 
 - Select an option
 - Wait for some other select element's options to load
@@ -389,7 +404,7 @@ self.select_option(
 {% endhighlight %}
 
 Now let's revisit the *states()*, *districts()* and *projects()* generators. They 
-can all be refactored since they also duplicate a common pattern:
+can all be refactored since they also follow a common pattern:
 
 - Get a reference to a select element
 - Generate its list of values
@@ -433,7 +448,8 @@ projects = self.make_select_option_iterator(
 )
 {% endhighlight %}
 
-Here is our final implementation. It is now much more concise:
+Here is our final implementation. It is much more concise than our
+earlier version:
 
 {% highlight python %}
 #!/usr/bin/env python
