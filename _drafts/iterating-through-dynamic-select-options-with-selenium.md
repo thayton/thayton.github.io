@@ -4,7 +4,7 @@ title: Iterating through Dynamic Select Options with Selenium
 ---
 
 In this post I'll show how to iterate through all of the dropdown menus in a form
-that uses [SELECT elements](http://www.w3schools.com/tags/tag_select.asp) whose 
+that uses [SELECT] (http://www.w3schools.com/tags/tag_select.asp) elements whose 
 option values are dynamically generated. I'll use [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
 and show how Selenium can be used to wait for the option values to load. I'll 
 wrap up the post by showing how we can refactor the code into a more generic solution, 
@@ -259,9 +259,9 @@ to load. It determines when the district options have loaded by:
 3. Waiting for the district SELECT element from step 1 to return a *StaleElementReferenceException*
    when we reference its *text* attribute.
 
-Essentially, we get a reference to the *district* SELECT element in the [DOM](http://www.w3.org/DOM/) *before* 
+Essentially, we get a reference to the district SELECT element in the [DOM](http://www.w3.org/DOM/) *before* 
 it has been dynamically updated, and then wait for that reference to become stale 
-*after* we select a state and trigger the update to the DOM.
+*after* we select a state which triggers an update to the DOM.
 
 We'll repeat this same pattern for the district and project SELECT elements:
 
