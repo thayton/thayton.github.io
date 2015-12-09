@@ -114,6 +114,8 @@ def scrape(self):
                 print 4*' ', project
 {% endhighlight %}
 
+First let's take a look at the states generator:
+
 {% highlight python %}
 def states():
     state_select = self.get_state_select()
@@ -128,6 +130,49 @@ def states():
         yield state_select.first_selected_option.text
 {% endhighlight %}
 
+The *states()* function generates a list of all the possible option values for
+the state select element. Then it uses *yield* to allow the caller to iterate
+through that list.
+
+The *districts()* and *projects()* generators are implemented the same way:
+
+{% highlight python %}
+def districts():
+    district_select = self.get_district_select()
+    district_select_option_values = [ 
+        '%s' % o.get_attribute('value') 
+        for o 
+        in district_select.options 
+        if o.text != '-Select-' 
+    ]
+
+    for v in district_select_option_values:
+        district_select = self.select_district_option(v)
+        yield district_select.first_selected_option.text
+            
+def projects():
+    project_select = self.get_project_select()
+    project_select_option_values = [ 
+        '%s' % o.get_attribute('value') 
+        for o 
+        in project_select.options[1:]
+    ]
+
+    for v in project_select_option_values:
+        project_select = self.select_project_option(v)
+        yield project_select.first_selected_option.text
+{% endhighlight %}
+
+There are two types of helper functions used by the generators.
+They both follow the same pattern:
+
+- Get a reference to a select element
+- Select one of the options
+
+Let's look at the first type: functions used to get a reference to a select
+element. Here is the code for *get\_state\_select* which returns a reference
+to the state select element:
+
 {% highlight python %}
 def get_state_select(self):
     path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
@@ -135,6 +180,31 @@ def get_state_select(self):
     state_select = Select(state_select_elem)
     return state_select
 {% endhighlight %}
+
+We look up a reference to an element given its xpath. Then we use 
+the [Select](https://selenium.googlecode.com/git/docs/api/py/webdriver_support/selenium.webdriver.support.select.html)
+constructor to create an instance of the WebDriver Select support 
+class which is used to interact with select elements.
+
+We get references to the district and project select elements the
+same way:
+
+{% highlight python %}
+def get_district_select(self):
+    path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
+    district_select_elem = self.driver.find_element_by_xpath(path)
+    district_select = Select(district_select_elem)
+    return district_select
+
+def get_project_select(self):
+    path = '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]'
+    project_select_elem = self.driver.find_element_by_xpath(path)
+    project_select = Select(project_select_elem)
+    return project_select
+{% endhighlight %}
+
+Next let's take a look at the functions used to select an option.
+First we'll examine *select\_state\_option*:
 
 {% highlight python %}
 def select_state_option(self, value, dowait=True):
@@ -180,13 +250,6 @@ We'll repeat this same basic pattern for the district and project select
 elements. 
 
 {% highlight python %}
-#--- DISTRICT --------------------------------------------------
-def get_district_select(self):
-    path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
-    district_select_elem = self.driver.find_element_by_xpath(path)
-    district_select = Select(district_select_elem)
-    return district_select
-
 def select_district_option(self, value, dowait=True):
     '''
     Select district value from dropdown. Wait until district dropdown
@@ -220,182 +283,10 @@ select a value, so its implementation is very simple.
 
 {% highlight python %}
 #--- PROJECT ---------------------------------------------------
-def get_project_select(self):
-    path = '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]'
-    project_select_elem = self.driver.find_element_by_xpath(path)
-    project_select = Select(project_select_elem)
-    return project_select
-
 def select_project_option(self, value, dowait=True):
     project_select = self.get_project_select()
     project_select.select_by_value(value)
     return self.get_project_select()
-{% endhighlight %}
-
-Now here it is all together:
-
-{% highlight python %}
-#!/usr/bin/env python
-
-import sys
-import signal
-
-from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.support.ui import Select
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.common.exceptions import StaleElementReferenceException
-
-def sigint(signal, frame):
-    sys.exit(0)
-
-class Scraper(object):
-    def __init__(self):
-        self.url = 'http://icds-wcd.nic.in/icds/icdsawc.aspx'
-        self.driver = webdriver.PhantomJS()
-        self.driver.set_window_size(1120, 550)
-
-    #--- STATE -----------------------------------------------------
-    def get_state_select(self):
-        path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
-        state_select_elem = self.driver.find_element_by_xpath(path)
-        state_select = Select(state_select_elem)
-        return state_select
-
-    def select_state_option(self, value, dowait=True):
-        '''
-        Select state value from dropdown. Wait until district dropdown
-        has loaded before returning.
-        '''
-        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
-        district_select_elem = self.driver.find_element_by_xpath(path)
-
-        def district_select_updated(driver):
-            try:
-                district_select_elem.text
-            except StaleElementReferenceException:
-                return True
-            except:
-                pass
-
-            return False
-
-        state_select = self.get_state_select()
-        state_select.select_by_value(value)
-
-        if dowait:
-            wait = WebDriverWait(self.driver, 10)
-            wait.until(district_select_updated)
-
-        return self.get_state_select()
-
-    #--- DISTRICT --------------------------------------------------
-    def get_district_select(self):
-        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
-        district_select_elem = self.driver.find_element_by_xpath(path)
-        district_select = Select(district_select_elem)
-        return district_select
-
-    def select_district_option(self, value, dowait=True):
-        '''
-        Select district value from dropdown. Wait until district dropdown
-        has loaded before returning.
-        '''
-        path = '//select[@id="ctl00_ContentPlaceHolder1_dropdistrict"]'
-        district_select_elem = self.driver.find_element_by_xpath(path)
-
-        def district_select_updated(driver):
-            try:
-                district_select_elem.text
-            except StaleElementReferenceException:
-                return True
-            except:
-                pass
-
-            return False
-
-        district_select = self.get_district_select()
-        district_select.select_by_value(value)
-
-        if dowait:
-            wait = WebDriverWait(self.driver, 10)
-            wait.until(district_select_updated)
-
-        return self.get_district_select()
-
-    #--- PROJECT ---------------------------------------------------
-    def get_project_select(self):
-        path = '//select[@id="ctl00_ContentPlaceHolder1_dropproject"]'
-        project_select_elem = self.driver.find_element_by_xpath(path)
-        project_select = Select(project_select_elem)
-        return project_select
-
-    def select_project_option(self, value, dowait=True):
-        project_select = self.get_project_select()
-        project_select.select_by_value(value)
-        return self.get_project_select()
-
-    def load_page(self):
-        self.driver.get(self.url)
-
-        def page_loaded(driver):
-            path = '//select[@id="ctl00_ContentPlaceHolder1_dropstate"]'
-            return driver.find_element_by_xpath(path)
-
-        wait = WebDriverWait(self.driver, 10)
-        wait.until(page_loaded)            
-        
-    def scrape(self):
-        def states():
-            state_select = self.get_state_select()
-            state_select_option_values = [ 
-                '%s' % o.get_attribute('value') 
-                for o 
-                in state_select.options[1:]
-            ]
-
-            for v in state_select_option_values:
-                state_select = self.select_state_option(v)
-                yield state_select.first_selected_option.text
-
-        def districts():
-            district_select = self.get_district_select()
-            district_select_option_values = [ 
-                '%s' % o.get_attribute('value') 
-                for o 
-                in district_select.options 
-                if o.text != '-Select-' 
-            ]
-
-            for v in district_select_option_values:
-                district_select = self.select_district_option(v)
-                yield district_select.first_selected_option.text
-            
-        def projects():
-            project_select = self.get_project_select()
-            project_select_option_values = [ 
-                '%s' % o.get_attribute('value') 
-                for o 
-                in project_select.options[1:]
-            ]
-
-            for v in project_select_option_values:
-                project_select = self.select_project_option(v)
-                yield project_select.first_selected_option.text
-
-        self.load_page()
-
-        for state in states():
-            print state
-            for district in districts():
-                print 2*' ', district
-                for project in projects():
-                    print 4*' ', project
-
-if __name__ == '__main__':
-    signal.signal(signal.SIGINT, sigint)
-    scraper = Scraper()
-    scraper.scrape()
 {% endhighlight %}
 
 Let's try running it:
@@ -542,7 +433,7 @@ projects = self.make_select_option_iterator(
 )
 {% endhighlight %}
 
-Our implementation is now much more concise:
+Here is our final implementation. It is now much more concise:
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -658,3 +549,7 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
+## Shameless Plug
+
+Have a scraping project you'd like done? I'm available for hire. [Contact me](/contact) 
+for a free quote.
