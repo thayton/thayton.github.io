@@ -307,7 +307,7 @@ def select_project_option(self, value, dowait=True):
 Let's try running it:
 
 ```
-$ ./v1.scraper.py 
+$ ./v1.scraper.py
 Andaman & Nicobar Islands
    Nicobars
    North  & Middle Andaman
@@ -326,17 +326,17 @@ Andhra Pradesh
 
 ## Refactoring
 
-If you take a look at the code for selecting option values for the state and district 
+If you take a look at the code for selecting the state and district option values
 (*select\_state\_option* and *select\_district\_option*) you might notice that both 
 methods are repeating the following pattern:
 
 - Select an option
 - Wait for some other SELECT element's options to load
 
-This pattern comes up a lot in forms with SELECT elements whose option values are dynamically
-genereated.
+This pattern appears frequently in forms with SELECT elements whose option values are dynamically
+generated.
 
-We can refactor this pattern out into something more generic. 
+We can refactor this pattern into something more generic. 
 
 The *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
 can all be implemented using a generic *get_select* method that takes the xpath of the 
@@ -349,10 +349,12 @@ def get_select(self, xpath):
     return select
 {% endhighlight %}
 
-Similarly, the *select\_state\_option*, *select\_district\_option*, and *select\_project\_option*
-methods can be replaced by a generic *select\_option* method that takes the xpath of a
-SELECT element, the option value to choose, and the xpath of another SELECT element whose options
-will by dynamicly updated once we make the current selection.
+First, let's replace the *select\_state\_option*, *select\_district\_option*, and 
+*select\_project\_option* methods with a generic *select\_option* method. 
+
+Our new method takes the xpath of a SELECT element, the option value to choose, and the 
+xpath of another SELECT element whose options will by dynamicly loaded once we 
+make the current selection.
 
 {% highlight python %}
 def select_option(self, xpath, value, waitfor_elem_xpath=None):
