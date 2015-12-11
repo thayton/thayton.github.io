@@ -267,7 +267,7 @@ options corresponding to the chosen state. That causes any old references to the
 SELECT to become "stale." 
 
 That means there's an easy litmus test to determine when a select dropdown has fininshed loading: 
-wait for any old references to it to become stale.
+wait for existing references to it to become stale.
 
 We'll repeat this same pattern for the district and project SELECT elements:
 
@@ -427,18 +427,17 @@ self.select_option(
 )
 {% endhighlight %}
 
-Now let's use our new *select\_option* method to revisit the *states*, *districts* and 
-*projects* generators. They can all be refactored to use our new *select\_option* 
-method since they all follow the pattern:
+Now let's revisit the *states*, *districts* and *projects* generators. 
+They all follow the pattern:
 
 - Get a reference to a SELECT element
 - Generate its list of values
 - Iterate through those values selecting each option as we go
 
-We'll create a new method *make\_select\_option\_iterator* that returns a generator 
-function. All we need to supply are the xpath of the SELECT element whose options we 
-want to iterate over, and the xpath of the SELECT whose options get updated every time 
-a value from the first SELECT gets chosen:
+We encapsulate this logic in a new method *make\_select\_option\_iterator* that returns 
+a generator function. All we need to supply are the xpath of the SELECT element whose 
+options we want to iterate over, and the xpath of the SELECT whose options get updated 
+every time a value from the first SELECT gets chosen:
 
 {% highlight python %}
 def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
@@ -478,7 +477,7 @@ projects = self.make_select_option_iterator(
 )
 {% endhighlight %}
 
-Here's our final implementation. It is much more concise than our
+Here's our final implementation. It's much more concise than our
 earlier version:
 
 {% highlight python %}
