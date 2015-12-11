@@ -5,10 +5,10 @@ title: Iterating through Dynamic Select Options with Selenium
 
 In this post I'll show how to iterate through all of the dropdown menus in a form
 that uses [SELECT] (http://www.w3schools.com/tags/tag_select.asp) elements whose 
-option values are dynamically generated. I'll use [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
-and show how Selenium can be used to wait for the option values to load. I'll 
-wrap up the post by showing how we can refactor the code into a more generic solution, 
-which will be useful since this use-case arises frequently in scraping.
+option values are dynamically generated. I'll show how [Selenium](https://selenium-python.readthedocs.org/) 
+can be used to wait for the option values to load. I'll wrap up the post by 
+refactoring the code into a more generic solution, which is useful since this 
+use-case arises frequently in scraping.
 
 ## Background 
 
@@ -415,8 +415,8 @@ def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
     return lambda driver: elem_updated(driver)
 {% endhighlight %}
 
-With *select\_option*, we can now do something like the following to select 
-a state and then wait for the district options to load:
+With *select\_option* we can now use the following code to select 
+a state and then wait for the district SELECT element to get udpated:
 
 {% highlight python %}
 # '35' is the option value of the state "Andaman & Nicobar Islands"
@@ -427,9 +427,9 @@ self.select_option(
 )
 {% endhighlight %}
 
-That means we can revisit the *states*, *districts* and *projects* generators. They 
-can all be refactored to use our new *select\_option* method since they all follow 
-the pattern:
+Now let's use our new *select\_option* method to revisit the *states*, *districts* and 
+*projects* generators. They can all be refactored to use our new *select\_option* 
+method since they all follow the pattern:
 
 - Get a reference to a SELECT element
 - Generate its list of values
@@ -487,7 +487,6 @@ earlier version:
 import sys
 import signal
 
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
@@ -594,6 +593,10 @@ if __name__ == '__main__':
     scraper = Scraper()
     scraper.scrape()
 {% endhighlight %}
+
+You can see all of the code developed in this article on GitHub at the repository:
+
+[https://github.com/thayton/icds](https://github.com/thayton/icds)
 
 ## Shameless Plug
 
