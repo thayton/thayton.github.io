@@ -45,11 +45,12 @@ Same thing goes for the *Select Project* dropdown:
 Its list of options is only filled *after* a district has been chosen.
 
 To summarize how this form operates: first we select a *state*. That triggers 
-an update which causes the *district* options to load. Then, once we select 
-a *district*, another update is triggered and the *project* values are dynamically 
-loaded.
+an update which causes the *district* options to load. Then we select a *district*, 
+which triggers another update to dynamically load the *project* values.
 
 With that in mind, here's the pseudocode sketch of the solution we will develop. 
+
+<a name="pseudocode"></a>
 
 ```
 for each state
@@ -66,7 +67,9 @@ for each state
 
 ## Implementation
 
-Let's begin. Here's the boilerplate for our scraper:
+Let's begin. Here's the boilerplate for our scraper. It assumes that you 
+have [Selenium](https://selenium-python.readthedocs.org/) and [PhantomJS](http://phantomjs.org/) 
+installed:
 
 {% highlight python %}
 #!/usr/bin/env python
@@ -74,7 +77,6 @@ Let's begin. Here's the boilerplate for our scraper:
 import sys
 import signal
 
-from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
@@ -95,8 +97,8 @@ if __name__ == '__main__':
     scraper.scrape()
 {% endhighlight %}
 
-First we create a *load\_page()* method which retrieves the form page 
-and waits until the *state* SELECT element is rendered before returning:
+First we create a *load\_page* method which retrieves the form page 
+and waits until the state SELECT element is rendered before returning:
 
 {% highlight python %}
 def load_page(self):
@@ -110,8 +112,8 @@ def load_page(self):
     wait.until(page_loaded)            
 {% endhighlight %}
 
-Next, we write a *scrape()* method which implements the pseudocode I
-sketched above:
+Next, let's write a *scrape* method to implement the [pseudocode](#pseudocode)
+presented above:
 
 {% highlight python %}
 def scrape(self):
@@ -127,10 +129,10 @@ def scrape(self):
                 print 4*' ', project
 {% endhighlight %}
 
-The *scrape()* method uses generators to iterate through all of the
+The *scrape* method uses generators to iterate through all of the
 option values for the *state*, *district* and *project* SELECT elements.
 
-Let's take a look at the *states()* generator:
+Let's take a look at the *states* generator:
 
 {% highlight python %}
 def states():
@@ -146,11 +148,11 @@ def states():
         yield state_select.first_selected_option.text
 {% endhighlight %}
 
-The *states()* function generates a list of all the option values contained
+The *states* function generates a list of all the option values contained
 in the state SELECT element. Then it uses *yield* to allow the caller to iterate
-through that list.
+through that list, selecting the next option each time *states* gets called.
 
-The *districts()* and *projects()* generators are implemented the same way:
+The *districts* and *projects* generators are implemented the same way:
 
 {% highlight python %}
 def districts():
@@ -186,7 +188,7 @@ Both types follow the same patterns:
 - Select one of the options
 
 Let's look at the first type: methods used to get a reference to a SELECT
-element. Here is the code for *get\_state\_select()* which returns a reference
+element. Here is the code for *get\_state\_select* which returns a reference
 to the state SELECT element:
 
 {% highlight python %}
@@ -197,7 +199,7 @@ def get_state_select(self):
     return state_select
 {% endhighlight %}
 
-We look up a reference to an element given its xpath. Then we use 
+It looks up a reference to an element given its xpath. Then it uses
 the [Select](https://selenium.googlecode.com/git/docs/api/py/webdriver_support/selenium.webdriver.support.select.html)
 constructor to create an instance of the WebDriver Select support 
 class which is used to interact with SELECT elements.
@@ -219,8 +221,8 @@ def get_project_select(self):
     return project_select
 {% endhighlight %}
 
-Next let's take a look at the methods used to select an option.
-First we'll examine *select\_state\_option()*:
+Now let's take a look at the methods used to select option values.
+First we'll examine *select\_state\_option*:
 
 {% highlight python %}
 def select_state_option(self, value, dowait=True):
@@ -259,9 +261,12 @@ to load. It determines when the district options have loaded by:
 3. Waiting for the district SELECT element from step 1 to return a *StaleElementReferenceException*
    when we reference its *text* attribute.
 
-Essentially, we get a reference to the district SELECT element in the [DOM](http://www.w3.org/DOM/) *before* 
-it has been dynamically updated, and then wait for that reference to become stale 
-*after* we select a state which triggers an update to the DOM.
+When we select a state, the [DOM](http://www.w3.org/DOM/) gets updated with new district 
+options corresponding to the chosen state. That causes any old references to the district 
+SELECT to become "stale." 
+
+That means there's an easy litmus test to determine when a select dropdown has fininshed loading: 
+wait for any old references to it to become stale.
 
 We'll repeat this same pattern for the district and project SELECT elements:
 
@@ -304,6 +309,12 @@ def select_project_option(self, value, dowait=True):
     return self.get_project_select()
 {% endhighlight %}
 
+Now we have a working implementation. This is version 1 of our scraper.
+
+You can view the source for this version at:
+
+[https://github.com/thayton/icds/blob/master/v1.scraper.py](https://github.com/thayton/icds/blob/master/v1.scraper.py)
+
 Let's try running it:
 
 ```
@@ -322,11 +333,26 @@ Andhra Pradesh
      JAINOOR
      Kaghaznagar
      Khanapur
+     ...
 ```
 
 ## Refactoring
 
-If you take a look at the code for selecting the state and district option values
+In this section, I'm going to show how we can refactor the code we just 
+developed into a more concise implementation.
+
+First, the *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
+can all be replaced with a generic *get_select* method that takes the xpath of the 
+SELECT element as an argument.
+
+{% highlight python %}
+def get_select(self, xpath):
+    select_elem = self.driver.find_element_by_xpath(xpath)
+    select = Select(select_elem)
+    return select
+{% endhighlight %}
+
+Next, if you take a look at the code for selecting the state and district option values
 (*select\_state\_option* and *select\_district\_option*) you might notice that both 
 methods are repeating the following pattern:
 
@@ -338,23 +364,11 @@ generated.
 
 We can refactor this pattern into something more generic. 
 
-The *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
-can all be implemented using a generic *get_select* method that takes the xpath of the 
-SELECT element as an argument.
+We'll replace *select\_state\_option*, *select\_district\_option*, and 
+*select\_project\_option* methods with a new generic *select\_option* method. 
 
-{% highlight python %}
-def get_select(self, xpath):
-    select_elem = self.driver.find_element_by_xpath(xpath)
-    select = Select(select_elem)
-    return select
-{% endhighlight %}
-
-First, let's replace the *select\_state\_option*, *select\_district\_option*, and 
-*select\_project\_option* methods with a generic *select\_option* method. 
-
-Our new method takes the xpath of a SELECT element, the option value to choose, and the 
-xpath of another SELECT element whose options will by dynamicly loaded once we 
-make the current selection.
+Our new method takes the xpath of a SELECT element, an option value to choose, and the 
+xpath of another SELECT element that we'll wait to see updated before returning.
 
 {% highlight python %}
 def select_option(self, xpath, value, waitfor_elem_xpath=None):
