@@ -16,7 +16,7 @@ The site I'll use in today's example is at the following URL:
 
 <a target="_blank" href="http://icds-wcd.nic.in/icds/icdsawc.aspx">http://icds-wcd.nic.in/icds/icdsawc.aspx</a>
 
-Click on the link and you'll be presented with the following form. 
+Click on the link and you'll be presented with the following form: 
 
 ![Form](/assets/icds/1.png)
 
@@ -38,7 +38,7 @@ until a state has been chosen. This means that the range of possible
 values in the district SELECT element will always depend on the current value 
 of the state selection.
 
-Same thing goes for the *Select Project* dropdown:
+The *Select Project* dropdown works the same way:
 
 ![Project Empty](/assets/icds/4.png)
 
@@ -149,7 +149,7 @@ def states():
 {% endhighlight %}
 
 The *states* function generates a list of all the option values contained
-in the state SELECT element. Then it uses *yield* to allow the caller to iterate
+in the state SELECT element. It uses *yield* to allow the caller to iterate
 through that list, selecting the next option each time *states* gets called.
 
 The *districts* and *projects* generators are implemented the same way:
@@ -182,7 +182,7 @@ def projects():
 {% endhighlight %}
 
 There are two types of helper methods used by the generators.
-Both types follow the same patterns:
+They follow the same patterns:
 
 - Get a reference to a SELECT element
 - Select one of the options
@@ -221,8 +221,9 @@ def get_project_select(self):
     return project_select
 {% endhighlight %}
 
-Now let's take a look at the methods used to select option values.
-First we'll examine *select\_state\_option*:
+Now let's take a look at the methods for selecting option values.
+The first method we'll look at, *select\_state\_option*, is used
+to select a value from the state SELECT dropdown:
 
 {% highlight python %}
 def select_state_option(self, value, dowait=True):
@@ -310,8 +311,7 @@ def select_project_option(self, value, dowait=True):
 {% endhighlight %}
 
 Now we have a working implementation. This is version 1 of our scraper.
-
-You can view the source for this version at:
+You can view its source at:
 
 [https://github.com/thayton/icds/blob/master/v1.scraper.py](https://github.com/thayton/icds/blob/master/v1.scraper.py)
 
