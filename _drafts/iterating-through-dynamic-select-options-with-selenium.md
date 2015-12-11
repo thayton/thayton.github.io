@@ -188,7 +188,7 @@ They follow the same patterns:
 - Select one of the options
 
 Let's look at the first type: methods used to get a reference to a SELECT
-element. Here is the code for *get\_state\_select* which returns a reference
+element. Here's the code for *get\_state\_select* which returns a reference
 to the state SELECT element:
 
 {% highlight python %}
@@ -393,10 +393,7 @@ def select_option(self, xpath, value, waitfor_elem_xpath=None):
 
 The *select_option* method relies on *make\_waitfor\_elem\_updated\_predicate* to
 create a function that can be passed as an argument to Selenium's WebDriverWait 
-[until](http://selenium-python.readthedocs.org/waits.html) method. The returned
-function determines whether an element has been updated in the DOM by checking 
-if the reference to that element is stale. It gets called over and over by *wait* 
-until it either returns *True* or a timeout occurs.
+[until](http://selenium-python.readthedocs.org/waits.html) method. 
 
 {% highlight python %}
 def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
@@ -415,8 +412,13 @@ def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
     return lambda driver: elem_updated(driver)
 {% endhighlight %}
 
-With *select\_option* we can now use the following code to select 
-a state and then wait for the district SELECT element to get udpated:
+The function returned by *make\_waitfor\_elem\_updated\_predicate* determines 
+whether an element has been updated in the DOM by checking if the reference to 
+that element is stale. It gets called over and over by *wait* until it either 
+returns *True* or a timeout occurs.
+
+With *select\_option* we can now use the following code to select a state and 
+have it wait for the district SELECT element to get udpated before returning:
 
 {% highlight python %}
 # '35' is the option value of the state "Andaman & Nicobar Islands"
@@ -456,6 +458,10 @@ def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
 
     return lambda: next_option(xpath, waitfor_elem_xpath)
 {% endhighlight %}
+
+*next_option* is the generator that iterates through the option values.
+We use a lambda function to generate a closure around the xpath arguments
+we pass to *make\_select\_option\_iterator*.
 
 Now we can make generators for the states, districts and projects
 with just a few lines of code:
