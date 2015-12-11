@@ -342,7 +342,7 @@ In this section, I'm going to show how we can refactor the code we just
 developed into a more concise implementation.
 
 First, the *get\_state\_select*, *get\_district\_select* and *get\_state\_select* methods
-can all be replaced with a generic *get_select* method that takes the xpath of the 
+can all be replaced with a generic *get_select* method that takes the xpath of a
 SELECT element as an argument.
 
 {% highlight python %}
@@ -360,15 +360,18 @@ methods are repeating the following pattern:
 - Wait for some other SELECT element's options to load
 
 This pattern appears frequently in forms with SELECT elements whose option values are dynamically
-generated.
+generated. We can refactor this pattern into something more generic. 
 
-We can refactor this pattern into something more generic. 
+We'll replace the following methods:
 
-We'll replace *select\_state\_option*, *select\_district\_option*, and 
-*select\_project\_option* methods with a new generic *select\_option* method. 
+-  *select\_state\_option*
+-  *select\_district\_option*
+-  *select\_project\_option* 
 
-Our new method takes the xpath of a SELECT element, an option value to choose, and the 
-xpath of another SELECT element that we'll wait to see updated before returning.
+with a new generic *select\_option* method. 
+
+*select_option* will take the xpath of a SELECT element, an option value to choose, 
+and the xpath of *another* SELECT element that we'll wait to see updated before returning:
 
 {% highlight python %}
 def select_option(self, xpath, value, waitfor_elem_xpath=None):
@@ -388,8 +391,12 @@ def select_option(self, xpath, value, waitfor_elem_xpath=None):
     return self.get_select(xpath)
 {% endhighlight %}
 
-The *select_option* method uses *make\_waitfor\_elem\_updated\_predicate* to generate 
-a function that will wait for an element to become stale in the current document. 
+The *select_option* method relies on *make\_waitfor\_elem\_updated\_predicate* to
+create a function that can be passed as an argument to Selenium's WebDriverWait 
+[until](http://selenium-python.readthedocs.org/waits.html) method. The returned
+function determines whether an element has been updated in the DOM by checking 
+if the reference to that element is stale. It gets called over and over by *wait* 
+until it either returns *True* or a timeout occurs.
 
 {% highlight python %}
 def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
@@ -408,8 +415,8 @@ def make_waitfor_elem_updated_predicate(driver, waitfor_elem_xpath):
     return lambda driver: elem_updated(driver)
 {% endhighlight %}
 
-Now we can do something like the following to select a state and then wait
-for the district options to load:
+With *select\_option*, we can now do something like the following to select 
+a state and then wait for the district options to load:
 
 {% highlight python %}
 # '35' is the option value of the state "Andaman & Nicobar Islands"
@@ -420,12 +427,18 @@ self.select_option(
 )
 {% endhighlight %}
 
-Now let's revisit the *states()*, *districts()* and *projects()* generators. They 
-can all be refactored since they also follow a common pattern:
+That means we can revisit the *states*, *districts* and *projects* generators. They 
+can all be refactored to use our new *select\_option* method since they all follow 
+the pattern:
 
 - Get a reference to a SELECT element
 - Generate its list of values
-- Iterate through those values
+- Iterate through those values selecting each option as we go
+
+We'll create a new method *make\_select\_option\_iterator* that returns a generator 
+function. All we need to supply are the xpath of the SELECT element whose options we 
+want to iterate over, and the xpath of the SELECT whose options get updated every time 
+a value from the first SELECT gets chosen:
 
 {% highlight python %}
 def make_select_option_iterator(self, xpath, waitfor_elem_xpath):
@@ -465,7 +478,7 @@ projects = self.make_select_option_iterator(
 )
 {% endhighlight %}
 
-Here is our final implementation. It is much more concise than our
+Here's our final implementation. It is much more concise than our
 earlier version:
 
 {% highlight python %}
