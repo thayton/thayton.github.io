@@ -3,11 +3,11 @@ layout: post
 title: Iterating through Dynamic Select Options with Selenium
 ---
 
-In this post I'll show how to iterate through all of the dropdown menus in a form
-that uses [SELECT] (http://www.w3schools.com/tags/tag_select.asp) elements whose 
-option values are dynamically generated. I'll show how [Selenium](https://selenium-python.readthedocs.org/) 
-can be used to wait for the option values to load. I'll wrap up the post by 
-refactoring the code into a more generic solution, which is useful since this 
+In this post I'll use [Selenium](https://selenium-python.readthedocs.org/) to show 
+how to iterate through dropdown menus in a form that uses [SELECT] (http://www.w3schools.com/tags/tag_select.asp) 
+elements whose option values are dynamically generated. I'll provide a technique
+that can be used to determine when the option values have loaded. I'll wrap up the 
+post by refactoring the code into a more generic solution, which is useful since this 
 use-case arises frequently in scraping.
 
 ## Background 
