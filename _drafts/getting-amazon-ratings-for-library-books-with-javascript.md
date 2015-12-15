@@ -12,6 +12,120 @@ automated.
 In this post I'll go over a script I developed that queries a library catalogue for books on a particular 
 subject and then returns the books sorted according to their Amazon rating.
 
+- manifest.json
+- popup.html
+- popup.js
+- options.html
+- options.js
+
+![Browser Action Search Form](/assets/js-amazon-reviews/browser-action-form.png)
+
+![Search Results](/assets/js-amazon-reviews/search-results.png)
+
+Pseudocode:
+
+```
+user clicks on browser action button
+user enters search keyword and clicks search
+
+search library catalogue for keyword
+load search results into popup.html
+
+for each book in results
+  look up amazon rating for book
+  rank book according to rating
+```
+
+```
+- startScrape()               Get library search form
+- submitLibForm()             Fill out and submit library search form
+- loadLibResults()            Load and rank search results
+    getAmazonRating()         Attach Amazon rating to book
+      extractAmazonRating()   Extract Amazon rating from product page
+        rankResultsCell()     Reorder book according to rating
+          resultCellRating()  Lookup rating that was attached to book
+```
+
+If the book's rating is highest compared to the other books, it gets moved
+to the top of results.
+
+Results are collected into groups of four:
+
+{% highlight xml %}
+<div id="results_wrapper">
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell0" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell1" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell2" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell3" class="results_cell">
+    </div>
+  </div>
+
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell4" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell5" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell6" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell7" class="results_cell">
+    </div>
+  </div>
+
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell8" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell9" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell10" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell11" class="results_cell">
+    </div>
+  </div>
+{% endhighlight %}
+
+{% highlight xml %}
+<div id="results_wrapper">
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell10" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell1" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell7" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell3" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell8" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell2" class="results_cell">
+    </div>
+    ...
+  </div>
+  <div class="results_every_four"></div>
+  <div class="results_every_four"></div>
+{% endhighlight %}
+
 <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extension</a>
 
 {% highlight json %}
