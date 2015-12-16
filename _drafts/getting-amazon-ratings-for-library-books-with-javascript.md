@@ -64,8 +64,6 @@ Our Chrome extension consists of the following five files:
 
 First, let's take a look at the manifest:
 
-
-
 {% highlight json %}
 {
   "manifest_version": 2,
@@ -113,9 +111,17 @@ First, let's take a look at the manifest:
 </html>
 {% endhighlight %}
 
-Without the base tag relative urls in the library search results will not resolve correctly.
-The prefix `chrome-extension://<chrome.runtime.id>/` will be used instead of the library's 
-hostname being used to resolve relative urls. 
+The form contains the following divs:
+
+- **extension-search-form**: the browser action search form
+- **library-search-form**: the library catalogue search form is loaded into this div
+- **amazon-response**: each book's Amazon page gets loaded into this div
+- **results**: the library search results are loaded into this div
+
+Note the use of the *base* tag in <head>. Without this base tag relative urls in the library 
+search results will not resolve correctly. The prefix `chrome-extension://<chrome.runtime.id>/` 
+will be used instead of the library's hostname being used to resolve relative urls. The base
+tag's *href* attribute is set in options.js, as we'll see below.
 
 
 ```
