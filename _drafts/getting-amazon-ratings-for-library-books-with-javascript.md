@@ -34,7 +34,8 @@ for the library catalogue search then appear within the same window:
 
 Note the number ('5' in this case) that appears right below each book title. That is the Amazon 
 rating for the book it appears underneath. The ratings are added to the HTML returned by the 
-library search results so I can get a quick glimpse of the most well rated books for a particular keyword.
+library search results. The books are sorted according to their rating and rearranged from their 
+original order so that highest rated books appear first. 
 
 Pseudocode:
 
