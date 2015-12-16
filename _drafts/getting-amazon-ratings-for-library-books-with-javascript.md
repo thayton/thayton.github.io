@@ -3,24 +3,38 @@ layout: post
 title: Getting Amazon Ratings for Library Books with Javascript
 ---
 
-Often when I want to read about a new technical subject, I'll see what's available for free at the 
-local library before buying a new book. To decide which book to check out, I browse through the library's
-catalogue and look up the reviews for each book on Amazon to see which book is the best rated. 
-Of course, doing this manually is tedious and repetitive which is usually a sign that it should be 
-automated. 
+In a [previous post]({% post_url 2015-02-26-getting-amazon-reviews-for-library-books %}), 
+I developed a Python scraper to look up Amazon ratings for library books. The script performed a library 
+catalogue search and sorted the results according to each book's Amazon rating. That implementaion was a 
+command line based Python script.
 
-In this post I'll go over a script I developed that queries a library catalogue for books on a particular 
-subject and then returns the books sorted according to their Amazon rating.
+In this post, I'll develop an equivalent solution in Javascript which can be run as a 
+Chrome extension. The Javascript solution will annotate the results page returned by the 
+library's catalogue search with a number showing the book's Amazon rating.
 
-- manifest.json
-- popup.html
-- popup.js
-- options.html
-- options.js
+## Background
+
+As I stated in my earlier post:
+
+> Often when I want to read about a new technical subject, I'll see what's available for free at the 
+> local library before buying a new book. To decide which book to check out, I browse through the library's
+> catalogue and look up the reviews for each book on Amazon to see which book is the best rated. 
+> Of course, doing this manually is tedious and repetitive which is usually a sign that it should be 
+> automated. 
+
+Here's a screenshot of what the final result will look like:
 
 ![Browser Action Search Form](/assets/js-amazon-reviews/browser-action-form.png)
 
+The usage is simple: click on the browser action button and a search form appears. Then, 
+enter the keyword you want to search for and then click the *Search* button. The results 
+for the library catalogue search then appear within the same window:
+
 ![Search Results](/assets/js-amazon-reviews/search-results.png)
+
+Note the number ('5' in this case) that appears right below each book title. That is the Amazon 
+rating for the book it appears underneath. The ratings are added to the HTML returned by the 
+library search results so I can get a quick glimpse of the most well rated books for a particular keyword.
 
 Pseudocode:
 
@@ -36,6 +50,16 @@ for each book in results
   rank book according to rating
 ```
 
+## Implementation
+
+- manifest.json
+- popup.html
+- popup.js
+- options.html
+- options.js
+
+
+
 ```
 - startScrape()               Get library search form
 - submitLibForm()             Fill out and submit library search form
@@ -46,85 +70,6 @@ for each book in results
           resultCellRating()  Lookup rating that was attached to book
 ```
 
-If the book's rating is highest compared to the other books, it gets moved
-to the top of results.
-
-Results are collected into groups of four:
-
-{% highlight xml %}
-<div id="results_wrapper">
-  <div class="results_every_four">
-    <div class="cell_wrapper">
-      <div id="results_cell0" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell1" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell2" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell3" class="results_cell">
-    </div>
-  </div>
-
-  <div class="results_every_four">
-    <div class="cell_wrapper">
-      <div id="results_cell4" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell5" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell6" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell7" class="results_cell">
-    </div>
-  </div>
-
-  <div class="results_every_four">
-    <div class="cell_wrapper">
-      <div id="results_cell8" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell9" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell10" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell11" class="results_cell">
-    </div>
-  </div>
-{% endhighlight %}
-
-{% highlight xml %}
-<div id="results_wrapper">
-  <div class="results_every_four">
-    <div class="cell_wrapper">
-      <div id="results_cell10" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell1" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell7" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell3" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell8" class="results_cell">
-    </div>
-    <div class="cell_wrapper">
-      <div id="results_cell2" class="results_cell">
-    </div>
-    ...
-  </div>
-  <div class="results_every_four"></div>
-  <div class="results_every_four"></div>
-{% endhighlight %}
 
 <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extension</a>
 
@@ -316,6 +261,90 @@ function getAmazonRating(isbn10, result_cell, detailLink)
   xhr.onload = extractAmazonRating;
   xhr.send();
 }
+{% endhighlight %}
+
+If the book's rating is highest compared to the other books, it gets moved
+to the top of results.
+
+Results are collected into groups of four. Each book's information is contained
+within a div.results_cell:
+
+{% highlight xml %}
+<div id="results_wrapper">
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell0" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell1" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell2" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell3" class="results_cell">
+    </div>
+  </div>
+
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell4" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell5" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell6" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell7" class="results_cell">
+    </div>
+  </div>
+
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell8" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell9" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell10" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell11" class="results_cell">
+    </div>
+  </div>
+{% endhighlight %}
+
+As books are ranked according to their Amazon rating, they are moved into the first
+div.results_every_four div. This simplifies the implementation.
+
+{% highlight xml %}
+<div id="results_wrapper">
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell10" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell1" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell7" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell3" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell8" class="results_cell">
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell2" class="results_cell">
+    </div>
+    ...
+  </div>
+  <div class="results_every_four"></div>
+  <div class="results_every_four"></div>
 {% endhighlight %}
 
 {% highlight javascript %}
