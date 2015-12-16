@@ -9,8 +9,9 @@ catalogue search and sorted the results according to each book's Amazon rating. 
 command line based Python script.
 
 In this post, I'll develop an equivalent solution in Javascript which can be run as a 
-Chrome extension. The Javascript solution will annotate the results page returned by the 
-library's catalogue search with a number showing the book's Amazon rating.
+<a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extension</a>. 
+The Javascript solution will annotate the results page returned by the library's catalogue search 
+with a number showing the book's Amazon rating.
 
 ## Background
 
@@ -22,17 +23,17 @@ As I stated in my earlier post:
 > Of course, doing this manually is tedious and repetitive which is usually a sign that it should be 
 > automated. 
 
-Here's a screenshot of what the final result will look like:
+Here's a screenshot of the extension in action:
 
 ![Browser Action Search Form](/assets/js-amazon-reviews/browser-action-form.png)
 
 The usage is simple: click on the browser action button and a search form appears. Then, 
 enter the keyword you want to search for and then click the *Search* button. The results 
-for the library catalogue search then appear within the same window:
+for the library catalogue search will appear within the same window:
 
 ![Search Results](/assets/js-amazon-reviews/search-results.png)
 
-Note the number ('5' in this case) that appears right below each book title. That is the Amazon 
+Note the number ('5' in this case) that appears right below each book title. That's the Amazon 
 rating for the book it appears underneath. The ratings are added to the HTML returned by the 
 library search results. The books are sorted according to their rating and rearranged from their 
 original order so that highest rated books appear first. 
@@ -53,26 +54,17 @@ for each book in results
 
 ## Implementation
 
+Our Chrome extension consists of the following five files:
+
 - manifest.json
 - popup.html
 - popup.js
 - options.html
 - options.js
 
+First, let's take a look at the manifest:
 
 
-```
-- startScrape()               Get library search form
-- submitLibForm()             Fill out and submit library search form
-- loadLibResults()            Load and rank search results
-    getAmazonRating()         Attach Amazon rating to book
-      extractAmazonRating()   Extract Amazon rating from product page
-        rankResultsCell()     Reorder book according to rating
-          resultCellRating()  Lookup rating that was attached to book
-```
-
-
-<a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extension</a>
 
 {% highlight json %}
 {
@@ -124,6 +116,17 @@ for each book in results
 Without the base tag relative urls in the library search results will not resolve correctly.
 The prefix `chrome-extension://<chrome.runtime.id>/` will be used instead of the library's 
 hostname being used to resolve relative urls. 
+
+
+```
+- startScrape()               Get library search form
+- submitLibForm()             Fill out and submit library search form
+- loadLibResults()            Load and rank search results
+    getAmazonRating()         Attach Amazon rating to book
+      extractAmazonRating()   Extract Amazon rating from product page
+        rankResultsCell()     Reorder book according to rating
+          resultCellRating()  Lookup rating that was attached to book
+```
 
 {% highlight javascript %}
 var library_search_page_url = 'https://mdpl.ent.sirsi.net/client/catalog/search/advanced';
