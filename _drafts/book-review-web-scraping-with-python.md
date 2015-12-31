@@ -54,7 +54,8 @@ some basic CAPTCHAs using thresholding. For more complicated CAPTCHAs, the autho
 Finally the book wraps things up with a chapter on the popular Python scraping framework 
 <a target="_blank" href="http://scrapy.org/">Scrapy</a> (and its visual counterpart 
 <a target="_blank" href="https://github.com/scrapinghub/portia">Portia</a>) and a final chapter 
-that provides real life examples of how to scrape some popular websites like Gap.
+that provides examples of how the techniques presented in the book can be used to scrape sites 
+like Gap, BMW and Facebook.
 
 ### Conclusion
 
