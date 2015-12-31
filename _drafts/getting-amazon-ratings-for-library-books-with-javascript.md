@@ -33,10 +33,10 @@ for the library catalogue search will appear within the same window:
 
 ![Search Results](/assets/js-amazon-reviews/search-results.png)
 
-Note the number ('5' in this case) that appears right below each book title. That's the Amazon 
-rating for the book it appears underneath. The ratings are added to the HTML returned by the 
-library search results. The books are sorted according to their rating and rearranged from their 
-original order so that highest rated books appear first. 
+Note the number that appears below each book title. That's the Amazon rating for the book.
+In the screenshot, both books got a rating of 5. The ratings are added to the HTML returned by 
+the library search results. The books are sorted according to their rating and rearranged from 
+their original order so that highest rated books appear first. 
 
 Pseudocode:
 
