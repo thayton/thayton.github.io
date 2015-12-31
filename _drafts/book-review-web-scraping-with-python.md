@@ -9,9 +9,9 @@ Web Scraping with Python</a> by Richard Lawson; Packt Publishing.
 <img style="width: 50%; height: 50%; margin:0 15px 15px 0" src="/assets/book_review_wswp/wswp_cover.jpg">
 
 The book is terrific and manages to cover a lot of important scraping topics in just 140 pages. The
-author provides enough information so that by the end of the book you've got an arsenal of information
-and code for scraping a variety of websites. At the same time, the book avoids getting bogged down on 
-any one topic.
+<a target="_blank" href="https://www.packtpub.com/books/info/authors/richard-penman">author</a> provides 
+enough information so that by the end of the book you've got an arsenal of techniques and code for scraping 
+a variety of websites. At the same time, the book avoids getting bogged down on any one topic.
 
 ### Chapters 1-4
 
@@ -37,9 +37,9 @@ wade through pages of code.
 The next three chapters go into the nuts and bolts of scraping dynamic websites, handling forms and logins, 
 and dealing with CAPTCHAs. 
 
-The chapter on dynamic websites shows how to reverse engineer websites that using AJAX on the backend by 
-using FireBug Lite. Then it delves into the different options (WebKit, Selenium+Firefox) for rendering dynamic 
-websites.
+The chapter on dynamic websites shows how <a target="_blank" href="https://getfirebug.com/firebuglite">FireBug Lite</a> 
+can be used to reverse engineer websites using AJAX on the backend. Then it delves into different options (WebKit, 
+Selenium, ...) for rendering dynamic websites.
 
 Next comes a chapter dedicated to handling forms. After showing the basics of form submission with urllib
 and Mechanize the author provides useful details on how you can reuse the cookies from your Firefox browsing 
