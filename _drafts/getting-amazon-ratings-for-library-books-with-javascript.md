@@ -115,7 +115,7 @@ First, let's take a look at the manifest:
 The manifest begins with declarations of the name, version and description of our extension. 
 
 The *options_page* points to the HTML interface that allows the user to specify the URL of the 
-SIRSI catalogue the extension will use for searches.
+SIRSI catalogue the extension will search against.
 
 In the *browser_action* section, I reuse the [icon](https://developer.chrome.com/extensions/examples/tutorials/getstarted/icon.png)
 that Google provides in its <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Getting Started</a>
@@ -173,7 +173,7 @@ The form contains the following divs:
 Note the use of the \<base\> tag in \<head\>. Without this tag relative urls in the library 
 search results will not resolve correctly. The prefix `chrome-extension://<chrome.runtime.id>/` 
 will be used instead of the library's hostname to resolve relative urls. The base
-tag's *href* attribute is set in *popup.js*, as we'll see below.
+tag's *href* attribute will be set in *popup.js*, as we'll see below.
 
 ### popup.js
 
@@ -191,17 +191,31 @@ showing how the functions relate to each other:
           resultCellRating()  Lookup rating that was attached to book
 ```
 
-Now we'll walk through each of these functions to dissect how the extension works.
-
-First we start off with the boilerplate code that sets up a listener to handle
-when the *Search* button in *popup.html* is clicked:
+We'll walk through each of these functions to dissect how the extension works. First 
+let's go over the global variables used:
 
 {% highlight javascript %}
 var library_search_page_url; // Set in options.html (eg: https://mdpl.ent.sirsi.net/client/catalog/search/advanced)
 var library_detail_page_url; // Set in options.html (eg: https://mdpl.ent.sirsi.net/client/catalog/search/detailnonmodal/)
 var amazon_url = 'http://www.amazon.com/gp/product/';
 var keyword;
+{% endhighlight %}
 
+The *library\_search\_page\_url* and *library\_detail\_page\_url* variables contain the URLs 
+of the catalogue's advanced search page and book details page respectively. They'll 
+get set when we load the extension's options in *getConfig*.
+
+The *amazon\_url* variable contains the base URL of Amazon product pages where we'll look 
+up the rating. Amazon product pages use the following URL format:
+
+http://www.amazon.com/gp/product/\<ISBN10\>
+
+The *keyword* variable contains the search term.
+
+Now let's examine the boilerplate code that sets up a listener to handle when 
+the *Search* button in *popup.html* is clicked:
+
+{% highlight javascript %}
 document.addEventListener('DOMContentLoaded', function() {
   var searchButton = document.getElementById('search');
 
@@ -213,18 +227,8 @@ document.addEventListener('DOMContentLoaded', function() {
 }, false);
 {% endhighlight %}
 
-The *library\_search\_page\_url* and *library\_detail\_page\_url* variables contain the URLs 
-of the catalogue's advanced search page and book details page respectively. They'll 
-get set when we load the extension's options in *getConfig*.
-
-The *amazon\_url* variable contains the base URL of books product page where we'll look 
-up the rating. Amazon product pages use the following URL format:
-
-http://www.amazon.com/gp/product/\<ISBN10\>
-
 The code uses *addEventListener* so that when a user clicks the *Search* button, we look
-the value for *keyword* and then make a call to *getConfig* to load the current option 
-settings.
+the value for *keyword* and then make a call to *getConfig* to load the current options.
 
 The function *startScrape* is passed as an argument to *getConfig* so that once
 *getConfig* completes *startScrape* will be called.
@@ -273,8 +277,8 @@ function startScrape() {
 }
 {% endhighlight %}
 
-The *startScrape* function sends a GET request for the catalogue search form. Once the 
-response returns *submitLibForm* is called with *this.responseText* containing the 
+The *startScrape* function sends a GET request to retrieve the catalogue search form. Once 
+the response returns, *submitLibForm* is called with *this.responseText* containing the 
 response HTML.
 
 {% highlight javascript %}
@@ -307,16 +311,14 @@ function submitLibForm()
 }
 {% endhighlight %}
 
-*submitLibForm* loads the HTML for the catalogue's advanced search form into the 
-*library-search-form* div in *popup.html*. Then it fills out the form with the 
-keyword being queried. Additional filters are used to ensure that only English 
+*submitLibForm* loads the HTML for the catalogue's advanced search form into 
+*div#library-search-form* in *popup.html*. Then it fills in the form with the 
+keyword being queried. Additional filters are applied to ensure that only English 
 language books appear in the results.
 
-A <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects">Form Data</a>
-object is used to send the form key/value pairs in the XMLHttpRequest POST.
-
-The `loadLibResults` function receives the search form results once the
-response comes back.
+I use a <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects">Form Data</a>
+object to send the form key/value pairs in the XMLHttpRequest POST. After the POST 
+is sent, `loadLibResults` is called to handle the response.
 
 {% highlight javascript %}
 /*
@@ -327,6 +329,7 @@ response comes back.
 function loadLibResults()
 {
   var result_cells;
+  var elem;
 
   document.getElementById("extension-search-form").style.display = "none";
   document.getElementById("results").innerHTML = this.responseText;
@@ -334,34 +337,62 @@ function loadLibResults()
   result_cells = document.querySelectorAll('div[id^=results_cell]');
 
   for (i = 0; i < result_cells.length; i++) {
-      var isbn13 = document.querySelector('#' + result_cells[i].id + ' .isbnValue').value;
-      var isbn10 = isbn13to10(isbn13);
-      var detailLink = document.getElementById('detailLink' + i);
+    var select = '#' + result_cells[i].id + ' .isbnValue';
+    var isbn13 = document.querySelector(select).value;
+    var isbn10 = isbn13to10(isbn13);
+    var detailLink = document.getElementById('detailLink' + i);
 
-      /*
-       * The links as they stand won't work since they use onclick which is 
-       * forbidden in extensions for security reasons. Update the links to
-       * each books detail page instead of having a popup.
-       */
-      var onclick = detailLink.getAttribute('onclick');
-      var link = onclick.match(/(ent:.*_ILS:\d+\/\d+\/\d+)\?/);
-      var href = library_detail_page_url + link[1];
+    /*
+     * The links as they stand won't work since they use onclick which is 
+     * forbidden in extensions for security reasons. Update the links to
+     * each books detail page instead of having a popup.
+     */
+    var onclick = detailLink.getAttribute('onclick');
+    var link = onclick.match(/(ent:.*_ILS:\d+\/\d+\/\d+)\?/);
+    var href = library_detail_page_url + link[1];
 
-      detailLink.setAttribute('href', href);
-      detailLink.setAttribute('target', '_blank');
-      detailLink.removeAttribute('onclick');
+    detailLink.setAttribute('href', href);
+    detailLink.setAttribute('target', '_blank');
+    detailLink.removeAttribute('onclick');
 
-      getAmazonRating(isbn10, result_cells[i], detailLink);
+    getAmazonRating(isbn10, result_cells[i], detailLink);
   }  
 }
 {% endhighlight %}
 
-*loadLibResults* hides the *extenion-search-form* div. Then it loads the search
+First, *loadLibResults* hides the *extenion-search-form* div. Then it loads the search
 results into the *results* div in *popup.html*.
 
+Next, all of the *result\_cell* divs are loaded into *result\_cells*. These divs contain
+information about each book in the search results:
+
+{% highlight xml %}
+<div id="results_wrapper">
+  <div class="results_every_four">
+    <div class="cell_wrapper">
+      <div id="results_cell0" class="results_cell">BOOK1
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell1" class="results_cell">BOOK2
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell2" class="results_cell">BOOK3
+    </div>
+    <div class="cell_wrapper">
+      <div id="results_cell3" class="results_cell">BOOK4
+    </div>
+  </div>
+{% endhighlight %}
+
+Within each div#results_cell lies the ISBN13 value for the book:
+
+{% highlight xml %}
+<input value="9780672337383" type="hidden" class="isbnValue">
+{% endhighlight %}
+
 Now comes the meat of our extension. The code looks up the ISBN13 for each of the
-books in the results. Then it finds the corresponding ISBN10 number. Then a call
-is made to *getAmazonRating* which will find the books rating and reorder the 
+books in the results. Then it converts it to its corresponding ISBN10 number. Next
+a call is made to *getAmazonRating* which will find the books rating and reorder the 
 book in the HTML results accordingly.
 
 {% highlight javascript %}
