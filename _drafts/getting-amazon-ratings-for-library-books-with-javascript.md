@@ -273,9 +273,9 @@ function startScrape() {
 }
 {% endhighlight %}
 
-The *startScrape* function retrieves the catalogue search form. Once the form
-is loaded, the *submitLibForm* function is called.
-
+The *startScrape* function sends a GET request for the catalogue search form. Once the 
+response returns *submitLibForm* is called with *this.responseText* containing the 
+response HTML.
 
 {% highlight javascript %}
 /*
@@ -283,36 +283,40 @@ is loaded, the *submitLibForm* function is called.
  */
 function submitLibForm()
 {
-    var form;
+  var form;
+  var elem;
 
-    /* Load library's advanced search form */
-    document.getElementById("library-search-form").innerHTML = this.responseText;
+  /* Load library's advanced search form */
+  elem = document.getElementById("library-search-form");
+  elem.innerHTML = this.responseText;
 
-    /* Search by keyword for English language books */
-    form = document.forms.advancedSearchForm;
-    form.elements.advancedSearchField.value = keyword.value;
-    form.elements.allWordsField.value = keyword.value;
-    form.elements.advancedSearchButton.value = 'Advanced Search';
-    form.elements.formatTypeDropDown.value = 'BOOK';
-    form.elements.languageDropDown.value = 'ENG';
+  /* Search by keyword for English language books */
+  form = document.forms.advancedSearchForm;
+  form.elements.advancedSearchField.value = keyword.value;
+  form.elements.allWordsField.value = keyword.value;
+  form.elements.advancedSearchButton.value = 'Advanced Search';
+  form.elements.formatTypeDropDown.value = 'BOOK';
+  form.elements.languageDropDown.value = 'ENG';
 
-    var formdata = new FormData(form);
-    var xhr = new XMLHttpRequest();
+  var formdata = new FormData(form);
+  var xhr = new XMLHttpRequest();
 
-    xhr.open('POST', form.action, true);
-    xhr.onload = loadLibResults;
-    xhr.send(formdata)
+  xhr.open('POST', form.action, true);
+  xhr.onload = loadLibResults;
+  xhr.send(formdata)
 }
 {% endhighlight %}
 
-*submitLibForm* fills out the library's advanced search form with the keyword being
-queried. Additional filters are used to ensure that only english language books (as 
-opposed to electronic resources) appear in the results.
+*submitLibForm* loads the HTML for the catalogue's advanced search form into the 
+*library-search-form* div in *popup.html*. Then it fills out the form with the 
+keyword being queried. Additional filters are used to ensure that only English 
+language books appear in the results.
 
 A <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects">Form Data</a>
-object is used to send the form key/value pairs in the XMLHttpRequest.
+object is used to send the form key/value pairs in the XMLHttpRequest POST.
 
-The `loadLibResults` handles the search form results.
+The `loadLibResults` function receives the search form results once the
+response comes back.
 
 {% highlight javascript %}
 /*
@@ -351,6 +355,14 @@ function loadLibResults()
   }  
 }
 {% endhighlight %}
+
+*loadLibResults* hides the *extenion-search-form* div. Then it loads the search
+results into the *results* div in *popup.html*.
+
+Now comes the meat of our extension. The code looks up the ISBN13 for each of the
+books in the results. Then it finds the corresponding ISBN10 number. Then a call
+is made to *getAmazonRating* which will find the books rating and reorder the 
+book in the HTML results accordingly.
 
 {% highlight javascript %}
 /*
