@@ -329,7 +329,6 @@ is sent, `loadLibResults` is called to handle the response.
 function loadLibResults()
 {
   var result_cells;
-  var elem;
 
   document.getElementById("extension-search-form").style.display = "none";
   document.getElementById("results").innerHTML = this.responseText;
@@ -360,11 +359,24 @@ function loadLibResults()
 }
 {% endhighlight %}
 
-First, *loadLibResults* hides the *extenion-search-form* div. Then it loads the search
-results into the *results* div in *popup.html*.
+*loadLibResults* is the main workhorse in the code: it's responsible for loading
+the search results, looking up each book's Amazon rating, and then reordering the 
+results so that the highest rated books appear first. Let's go through it step by step.
 
-Next, all of the *result\_cell* divs are loaded into *result\_cells*. These divs contain
-information about each book in the search results:
+{% highlight javascript %}
+var result_cells;
+
+document.getElementById("extension-search-form").style.display = "none";
+document.getElementById("results").innerHTML = this.responseText;
+
+result_cells = document.querySelectorAll('div[id^=results_cell]');
+{% endhighlight %}
+
+First, *loadLibResults* hides the *extenion-search-form* div since we don't need to see
+it anymore. Then it loads the search results into the *results* div in *popup.html*. Next, 
+all of the *result\_cell* divs are loaded into *result\_cells*. These divs are where
+information about each book is contained. The basic structure of the results looks
+like this:
 
 {% highlight xml %}
 <div id="results_wrapper">
@@ -384,16 +396,16 @@ information about each book in the search results:
   </div>
 {% endhighlight %}
 
-Within each div#results_cell lies the ISBN13 value for the book:
+Within each *div#results_cell* lies the ISBN13 value for the book:
 
 {% highlight xml %}
 <input value="9780672337383" type="hidden" class="isbnValue">
 {% endhighlight %}
 
-Now comes the meat of our extension. The code looks up the ISBN13 for each of the
-books in the results. Then it converts it to its corresponding ISBN10 number. Next
-a call is made to *getAmazonRating* which will find the books rating and reorder the 
-book in the HTML results accordingly.
+This is the value we'll use to look books up on Amazon. But first we have to 
+convert it to ISBN10 since that's what Amazon uses. Next, a call is made to 
+*getAmazonRating* to scrape each book's rating on Amazon and then move the book's
+*result\_cell* div to appear before the other books that have a lower rating.
 
 {% highlight javascript %}
 /*
