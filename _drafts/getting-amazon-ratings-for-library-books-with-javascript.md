@@ -173,7 +173,7 @@ The form contains the following divs:
 Note the use of the \<base\> tag in \<head\>. Without this tag relative urls in the library 
 search results will not resolve correctly. The prefix `chrome-extension://<chrome.runtime.id>/` 
 will be used instead of the library's hostname to resolve relative urls. The base
-tag's *href* attribute is set in options.js, as we'll see below.
+tag's *href* attribute is set in *popup.js*, as we'll see below.
 
 ### popup.js
 
@@ -226,6 +226,9 @@ The code uses *addEventListener* so that when a user clicks the *Search* button,
 the value for *keyword* and then make a call to *getConfig* to load the current option 
 settings.
 
+The function *startScrape* is passed as an argument to *getConfig* so that once
+*getConfig* completes *startScrape* will be called.
+
 {% highlight javascript %}
 function getConfig(callback) {
   chrome.storage.sync.get(['library_search_page_url',
@@ -253,9 +256,11 @@ function getConfig(callback) {
 }
 {% endhighlight %}
 
+In *getConfig* the values for *library\_search\_page\_url* and *library\_details\_page\_url*
+are loaded from storage. The value in *library\_search\_page\_url* is used to set
+the \<base\> tag in *popup.html*.
 
-The *callback* argument to *getConfig* is *startScrape*. So at the end of *getConfig*
-*startScrape* is called.
+Once those variables have been set, the callback parameter (set to *startScrape*) is invoked.
 
 {% highlight javascript %}
 function startScrape() {
@@ -268,12 +273,9 @@ function startScrape() {
 }
 {% endhighlight %}
 
-`submitLibForm` fills out the library's advanced search form with the keyword being
-queried. Additional filters are used to ensure that only english language books (as 
-opposed to electronic resources) appear in the results.
+The *startScrape* function retrieves the catalogue search form. Once the form
+is loaded, the *submitLibForm* function is called.
 
-A <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects">Form Data</a>
-object is used to send the form key/value pairs in the XMLHttpRequest.
 
 {% highlight javascript %}
 /*
@@ -302,6 +304,13 @@ function submitLibForm()
     xhr.send(formdata)
 }
 {% endhighlight %}
+
+*submitLibForm* fills out the library's advanced search form with the keyword being
+queried. Additional filters are used to ensure that only english language books (as 
+opposed to electronic resources) appear in the results.
+
+A <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/FormData/Using_FormData_Objects">Form Data</a>
+object is used to send the form key/value pairs in the XMLHttpRequest.
 
 The `loadLibResults` handles the search form results.
 
