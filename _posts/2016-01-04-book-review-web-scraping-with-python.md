@@ -3,8 +3,7 @@ layout: post
 title: "Book Review: Web Scraping with Python"
 ---
 
-I just finished reading <a target="_blank" href="http://www.amazon.com/Web-Scraping-Python-Richard-Lawson/dp/1782164367/">
-Web Scraping with Python</a> by Richard Lawson; Packt Publishing.
+I just finished reading <a rel="nofollow" href="http://www.amazon.com/gp/product/1782164367/ref=as_li_tl?ie=UTF8&camp=1789&creative=9325&creativeASIN=1782164367&linkCode=as2&tag=toddhayton-20&linkId=PZLHCYAFUQUWH7IS">Web Scraping with Python</a><img src="http://ir-na.amazon-adsystem.com/e/ir?t=toddhayton-20&l=as2&o=1&a=1782164367" width="1" height="1" border="0" alt="" style="border:none !important; margin:0px !important;" /> by Richard Lawson; Packt Publishing.
 
 <img style="width: 50%; height: 50%; margin:0 15px 15px 0" src="/assets/book_review_wswp/wswp_cover.jpg">
 
