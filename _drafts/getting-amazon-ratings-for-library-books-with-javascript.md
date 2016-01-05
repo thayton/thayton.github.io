@@ -10,7 +10,7 @@ command line based Python script.
 
 In this post, I'll develop an equivalent solution in Javascript which can be run as a 
 <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extension</a>. 
-The Javascript solution will annotate the results page returned by the library's catalogue search 
+The Javascript solution will annotate the results returned by the library's catalogue search 
 with a number showing the book's Amazon rating.
 
 ## Background
@@ -22,6 +22,9 @@ As I stated in my earlier post:
 > catalogue and look up the reviews for each book on Amazon to see which book is the best rated. 
 > Of course, doing this manually is tedious and repetitive which is usually a sign that it should be 
 > automated. 
+
+In a nutshell: the extension let's us quickly see what top rated books are available at the local library 
+for a given keyword. 
 
 Here's a screenshot of the extension in action:
 
@@ -39,7 +42,7 @@ to the HTML returned by the library search results. The books are sorted accordi
 rating and rearranged from the order that the library returns them in so that highest rated 
 books appear first. 
 
-Before we go into the details, here's a pseudocode sketch of our implementation:
+Before we go into the details, here's a pseudocode sketch of what we're going to implement:
 
 ```
 user clicks on browser action button
@@ -56,7 +59,7 @@ for each book in results
 ## Implementation
 
 Google has a great write up on developing <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extensions</a>.
-If you haven't developed an extension before, it will help if you read the Getting Started guide before 
+If you haven't developed an extension before, you should read that first before
 reading this post.
 
 Our Chrome extension is very simple. It consists of the following five files:
@@ -67,11 +70,18 @@ Our Chrome extension is very simple. It consists of the following five files:
 - options.html
 - options.js
 
-The manifest file gives details about our extension (its name, version, permissions, etc.). The popup.html file is the 
-HTML for the popup window I showed in the screenshot above. The popup.js file contains the code that performs the logic
-of our extension - in this case performing catalogue searches and sorting the results according to their Amazon rating.
-The options.html and options.js files are their to make the extension somewhat configurable by allowing users to 
-set the URLs of the search page and details page of the SIRSI catalogue they wish to search against.
+I'll go over each of these files in detail but first here's a brief overview:
+
+The *manifest.json* file gives information about the extension (its name, version, permissions, etc.). 
+
+The *popup.html* file is the HTML for the popup window I showed in the screenshot above. The *popup.js*
+file contains the code that performs the logic of our extension - in this case performing catalogue 
+searches and sorting the results according to their Amazon rating. 
+
+The *options.html* and *options.js* files make the extension configurable by allowing 
+users to provide the URLs of the SIRSI catalogue they wish to search against.
+
+### manifest.json
 
 First, let's take a look at the manifest:
 
@@ -83,6 +93,8 @@ First, let's take a look at the manifest:
   "description": "Search for books at your library and then retrieve their corresponding Amazon reviews",
   "version": "1.0",
 
+  "options_page": "options.html",
+
   "browser_action": {
     "default_icon": "icon.png",
     "default_popup": "popup.html",
@@ -90,6 +102,8 @@ First, let's take a look at the manifest:
   },
 
   "permissions": [
+    "storage",
+
     "http://*.sirsi.net/",
     "https://*.sirsi.net/",
     "http://*.amazon.com/",
@@ -98,13 +112,29 @@ First, let's take a look at the manifest:
 }
 {% endhighlight %}
 
-The permissions section details what sites the extension is allowed to connect to. The sirsi.net address
-is the domain of the <a target="_blank" href="http://www.sirsidynix.com/">company</a> that hosts my library's 
-catalogue software. Even though the extension only works with SIRSI catalogues, the idea should carry over
-to other implementations as well.
+The manifest begins with declarations of the name, version and description of our extension. 
 
-The permissions section also permits connections to amazon.com so that our extension can look up books on 
-Amazon to get their rating.
+The *options_page* points to the HTML interface that allows the user to specify the URL of the 
+SIRSI catalogue the extension will use for searches.
+
+In the *browser_action* section, I reuse the [icon](https://developer.chrome.com/extensions/examples/tutorials/getstarted/icon.png)
+that Google provides in its <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Getting Started</a>
+guide.
+
+The *permissions* section of the manifest specifies what our extension is allowed to do. The 
+*storage* keyword in the permissions section allows us to use the chrome.storage API. The URLs 
+specify what sites the extension is allowed to connect to. 
+
+The sirsi.net address is the domain of the <a target="_blank" href="http://www.sirsidynix.com/">company</a> 
+that hosts my library's catalogue software. The amazon.com URLs are there so that the extension can 
+look up books on Amazon to get their rating.
+
+### popup.html
+
+The *popup.html* window contains the HTML interface for the window that the user interacts with. Initially 
+it will contain the search form where the user enters a keyword to search for in the catalogue. After the 
+search completes, *popup.html* will contain the results of the search formatted so that the highest rated 
+books appear first.
 
 {% highlight html %}
 <!doctype html>
@@ -115,7 +145,7 @@ Amazon to get their rating.
     </style>
     <title>Library Search with Amazon Reviews</title>
     <script src="popup.js"></script>
-    <base href="https://mdpl.ent.sirsi.net/" />
+    <base href="" />
   </head>
   <body>
     <div id="extension-search-form">
@@ -130,6 +160,9 @@ Amazon to get their rating.
 </html>
 {% endhighlight %}
 
+Here's what it looks like when it's rendered:
+
+![Rendered Popup](/assets/js-amazon-reviews/rendered_popup.png)
 The form contains the following divs:
 
 - **extension-search-form**: the browser action search form
@@ -139,9 +172,14 @@ The form contains the following divs:
 
 Note the use of the \<base\> tag in \<head\>. Without this tag relative urls in the library 
 search results will not resolve correctly. The prefix `chrome-extension://<chrome.runtime.id>/` 
-will be used instead of the library's hostname being used to resolve relative urls. The base
+will be used instead of the library's hostname to resolve relative urls. The base
 tag's *href* attribute is set in options.js, as we'll see below.
 
+### popup.js
+
+Now let's take a look at *popup.js*. This file contains the "guts" of our extension.
+Here's an outline of the functions in *popup.js*, their purpose, and the call tree 
+showing how the functions relate to each other:
 
 ```
 - startScrape()               Get library search form
@@ -153,25 +191,81 @@ tag's *href* attribute is set in options.js, as we'll see below.
           resultCellRating()  Lookup rating that was attached to book
 ```
 
+Now we'll walk through each of these functions to dissect how the extension works.
+
+First we start off with the boilerplate code that sets up a listener to handle
+when the *Search* button in *popup.html* is clicked:
+
 {% highlight javascript %}
-var library_search_page_url = 'https://mdpl.ent.sirsi.net/client/catalog/search/advanced';
-var library_detail_page_url = 'https://mdpl.ent.sirsi.net/client/catalog/search/detailnonmodal/';
+var library_search_page_url; // Set in options.html (eg: https://mdpl.ent.sirsi.net/client/catalog/search/advanced)
+var library_detail_page_url; // Set in options.html (eg: https://mdpl.ent.sirsi.net/client/catalog/search/detailnonmodal/)
 var amazon_url = 'http://www.amazon.com/gp/product/';
 var keyword;
 
 document.addEventListener('DOMContentLoaded', function() {
   var searchButton = document.getElementById('search');
 
+  /* Load configuration options then start the scraping */
   searchButton.addEventListener('click', function() {
-    var xhr;
-
-    keyword = document.getElementById('keyword');
-    xhr = new XMLHttpRequest();
-    xhr.open('GET', library_search_page_url, true);
-    xhr.onload = submitLibForm;
-    xhr.send()
+      keyword = document.getElementById('keyword');
+      getConfig(startScrape);
   }, false);
 }, false);
+{% endhighlight %}
+
+The *library\_search\_page\_url* and *library\_detail\_page\_url* variables contain the URLs 
+of the catalogue's advanced search page and book details page respectively. They'll 
+get set when we load the extension's options in *getConfig*.
+
+The *amazon\_url* variable contains the base URL of books product page where we'll look 
+up the rating. Amazon product pages use the following URL format:
+
+http://www.amazon.com/gp/product/\<ISBN10\>
+
+The code uses *addEventListener* so that when a user clicks the *Search* button, we look
+the value for *keyword* and then make a call to *getConfig* to load the current option 
+settings.
+
+{% highlight javascript %}
+function getConfig(callback) {
+  chrome.storage.sync.get(['library_search_page_url',
+                           'library_detail_page_url'], 
+    function(items) {
+      var base;
+      var hostname;
+
+      library_search_page_url = items['library_search_page_url'];
+      library_detail_page_url = items['library_detail_page_url'];
+
+      hostname = library_search_page_url.match(/(https?:\/\/[^\/]+\/)/);
+      hostname = hostname[1];
+
+      /* 
+       * Set the base from the options so that we can 
+       * click on links in the library search results
+       */
+      base = document.getElementsByTagName('base')[0];
+      base.href = hostname;
+
+      callback();
+    }
+  );
+}
+{% endhighlight %}
+
+
+The *callback* argument to *getConfig* is *startScrape*. So at the end of *getConfig*
+*startScrape* is called.
+
+{% highlight javascript %}
+function startScrape() {
+  var xhr;
+
+  xhr = new XMLHttpRequest();
+  xhr.open('GET', library_search_page_url, true);
+  xhr.onload = submitLibForm;
+  xhr.send()
+}
 {% endhighlight %}
 
 `submitLibForm` fills out the library's advanced search form with the keyword being
