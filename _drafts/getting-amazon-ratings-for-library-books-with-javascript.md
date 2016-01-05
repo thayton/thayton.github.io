@@ -118,7 +118,7 @@ The form contains the following divs:
 - **amazon-response**: each book's Amazon page gets loaded into this div
 - **results**: the library search results are loaded into this div
 
-Note the use of the *base* tag in <head>. Without this base tag relative urls in the library 
+Note the use of the \<base\> tag in \<head\>. Without this tag relative urls in the library 
 search results will not resolve correctly. The prefix `chrome-extension://<chrome.runtime.id>/` 
 will be used instead of the library's hostname being used to resolve relative urls. The base
 tag's *href* attribute is set in options.js, as we'll see below.
@@ -273,11 +273,12 @@ function getAmazonRating(isbn10, result_cell, detailLink)
 }
 {% endhighlight %}
 
-If the book's rating is highest compared to the other books, it gets moved
-to the top of results.
+If a book's rating is the highest compared to the other books, it gets moved
+to the top of results div.
 
 Results are collected into groups of four. Each book's information is contained
 within a div.results_cell:
+
 
 {% highlight xml %}
 <div id="results_wrapper">
@@ -327,8 +328,56 @@ within a div.results_cell:
   </div>
 {% endhighlight %}
 
-As books are ranked according to their Amazon rating, they are moved into the first
-div.results_every_four div. This simplifies the implementation.
+```
+results_wrapper
+  results_every_four
+    cell_wrapper
+      results_cell0
+      results_cell1
+      results_cell2
+      results_cell3
+
+  results_every_four
+    cell_wrapper
+      results_cell4
+      results_cell5
+      results_cell6
+      results_cell7
+
+  results_every_four
+    cell_wrapper
+      results_cell8
+      results_cell9
+      results_cell10
+      results_cell11
+```
+
+
+After the books are sorted according to their rating, the results\_cells will be 
+clustered under the first results\_every\_four div. Technically, this isn't quite 
+correct and somewhat breaks the appearance. However, it serves our purpose here in 
+that it allows you to visually determine the highest rated books for your search.
+
+```
+results_wrapper
+  results_every_four
+    cell_wrapper
+      results_cell10
+      results_cell1
+      results_cell7
+      results_cell3
+      results_cell8
+      results_cell2
+      ...
+  results_every_four
+    cell_wrapper
+
+  results_every_four
+    cell_wrapper
+
+```
+
+Basically the HTML will end up looking like the following:
 
 {% highlight xml %}
 <div id="results_wrapper">
