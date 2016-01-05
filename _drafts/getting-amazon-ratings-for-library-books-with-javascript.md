@@ -34,11 +34,12 @@ for the library catalogue search will appear within the same window:
 ![Search Results](/assets/js-amazon-reviews/search-results.png)
 
 Note the number that appears below each book title. That's the Amazon rating for the book.
-In the screenshot, both books got a rating of 5. The ratings are added to the HTML returned by 
-the library search results. The books are sorted according to their rating and rearranged from 
-their original order so that highest rated books appear first. 
+In the screenshot, the first two books listed both got a rating of 5. The ratings are added 
+to the HTML returned by the library search results. The books are sorted according to their 
+rating and rearranged from the order that the library returns them in so that highest rated 
+books appear first. 
 
-Pseudocode:
+Before we go into the details, here's a pseudocode sketch of our implementation:
 
 ```
 user clicks on browser action button
@@ -54,13 +55,23 @@ for each book in results
 
 ## Implementation
 
-Our Chrome extension consists of the following five files:
+Google has a great write up on developing <a target="_blank" href="https://developer.chrome.com/extensions/getstarted">Chrome Extensions</a>.
+If you haven't developed an extension before, it will help if you read the Getting Started guide before 
+reading this post.
+
+Our Chrome extension is very simple. It consists of the following five files:
 
 - manifest.json
 - popup.html
 - popup.js
 - options.html
 - options.js
+
+The manifest file gives details about our extension (its name, version, permissions, etc.). The popup.html file is the 
+HTML for the popup window I showed in the screenshot above. The popup.js file contains the code that performs the logic
+of our extension - in this case performing catalogue searches and sorting the results according to their Amazon rating.
+The options.html and options.js files are their to make the extension somewhat configurable by allowing users to 
+set the URLs of the search page and details page of the SIRSI catalogue they wish to search against.
 
 First, let's take a look at the manifest:
 
@@ -86,6 +97,14 @@ First, let's take a look at the manifest:
   ]
 }
 {% endhighlight %}
+
+The permissions section details what sites the extension is allowed to connect to. The sirsi.net address
+is the domain of the <a target="_blank" href="http://www.sirsidynix.com/">company</a> that hosts my library's 
+catalogue software. Even though the extension only works with SIRSI catalogues, the idea should carry over
+to other implementations as well.
+
+The permissions section also permits connections to amazon.com so that our extension can look up books on 
+Amazon to get their rating.
 
 {% highlight html %}
 <!doctype html>
@@ -328,6 +347,9 @@ within a div.results_cell:
   </div>
 {% endhighlight %}
 
+Here's a simplified view of how the HTML is structure where
+only the *id* and *class* attributes are shown:
+
 ```
 results_wrapper
   results_every_four
@@ -484,3 +506,5 @@ function isbn10_check_digit(isbn10)
         return v + '';
 }
 {% endhighlight %}
+
+## Loading the Extension
