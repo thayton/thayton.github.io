@@ -13,7 +13,7 @@ title:            'Todd Hayton'
 tagline:          'Freelance Software Developer'
 description:      'Freelance Software Developer'
 url:              http://toddhayton.com
-baseurl:          /
+baseurl:          
 
 author:
   name:           'Todd Hayton'
