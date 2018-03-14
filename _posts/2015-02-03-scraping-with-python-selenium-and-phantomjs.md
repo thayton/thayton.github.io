@@ -18,13 +18,13 @@ been dynamically generated, we'll feed it into BeautifulSoup for parsing.
 First let's set up our environment by installing PhantomJS along with the Selenium bindings 
 for Python:
 
-{% highlight bash %}
+```bash
 $ mkdir scraper && cd scraper
 $ brew install phantomjs
 $ virtualenv venv
 $ source venv/bin/activate
 $ pip install selenium
-{% endhighlight %}
+```
 
 Now, let's look at the site we'll use for our example, the job search page for the company
 [L-3 Klein Associates](http://www.l-3com.com/careers/us-job-search.html). They use the Taleo Applicant
@@ -44,7 +44,7 @@ we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`.
 `scrape_job_links()` to iterate through the job listings, and then call `driver.quit()` once
 it's complete.
 
-{% highlight python %}
+```python
 #!/usr/bin/env python
 
 import re, urlparse
@@ -70,12 +70,12 @@ class TaleoJobScraper(object):
 if __name__ == '__main__':
     scraper = TaleoJobScraper()
     scraper.scrape()
-{% endhighlight %}
+```
 
 Now let's take a look at the `scrape_job_links()` method, which is listed 
 next:
 
-{% highlight python %}
+```python
 def scrape_job_links(self):
     self.driver.get(link)
 
@@ -107,7 +107,7 @@ def scrape_job_links(self):
             break
 
     return jobs
-{% endhighlight %}
+```
 
 First, we open the page with `driver.get()`. After `get()` returns, we feed the rendered HTML in
 `driver.page_source` into BeautifulSoup. Then we match against the `href` attribute of the 
@@ -123,7 +123,7 @@ We use the `Next` link to iterate through every page of the results by first fin
 using the driver's [find\_element\_by\_id](http://selenium-python.readthedocs.org/en/latest/locating-elements.html) 
 method and then calling `click()` if we're not on the last page.
 
-{% highlight python %}
+```python
 next_page_elem = self.driver.find_element_by_id('next')
 next_page_link = s.find('a', text='%d' % pageno)
 
@@ -132,7 +132,7 @@ if next_page_link:
     pageno += 1
 else:
     break
-{% endhighlight %}
+```
 
 To determine if we're on the last page we search for a link whose text equals the current page 
 number plus one. If no such link exists then we've reached the last page of results and break.

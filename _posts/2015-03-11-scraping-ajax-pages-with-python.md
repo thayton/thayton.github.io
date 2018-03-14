@@ -55,7 +55,7 @@ to replicate this request. Let's look at the details of this request.
 There are two parameters: `searchRequestJson` and `clientOffset`. We'll send both in our request. The `clientOffset`
 parameter is simple. It's just set to -300. The `searchRequestJson` field is more complex. Here's a formatted listing. 
 
-{% highlight json %}
+```json
 {  
    "searchString":"",
    "jobType":0,
@@ -90,14 +90,14 @@ parameter is simple. It's just set to -300. The `searchRequestJson` field is mor
    },
    "requisitionIds":null
 }
-{% endhighlight %}
+```
 
 The `searchRequestionJson` parmater is a JSON string whose `pageNumber` field controls which page of results 
 is returned for a request. That field will get incremented for each page we retrieve. 
 
 Here's the equivalent Python dictionary. We'll convert this dict into a JSON string when we send our requests.
 
-{% highlight python %}
+```python
 {
     "searchString":"",
     "jobType":0,
@@ -130,7 +130,7 @@ Here's the equivalent Python dictionary. We'll convert this dict into a JSON str
     },
     "requisitionIds":None
 }
-{% endhighlight %}
+```
 
 # Response Format
 
@@ -141,7 +141,7 @@ Next click on the Response tab to see how jobs are returned for a query.
 Jobs are returned in XML. If you select the entire response and format the results you'll
 get a listing like the following.
 
-{% highlight xml %}
+```xml
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <result>
   <count>2557</count>
@@ -163,7 +163,7 @@ get a listing like the following.
   </requisition>
   ...
 </result>
-{% endhighlight %}
+```
 
 For our scraper, we'll extract the job title, ID, and location for each job in the listing.
 
@@ -185,7 +185,7 @@ Now let's write the code.
 
 First, create a class named `AppleJobsScraper` with a dict named `search_request` for building the `searchRequestJson` string.
 
-{% highlight python %}
+```python
 #!/usr/bin/env python
 
 import json
@@ -225,21 +225,21 @@ class AppleJobsScraper(object):
                 "hiringManagerId":None},
             "requisitionIds":None
         }
-{% endhighlight %}
+```
 
 Next, add a method named `scrape`. It will call `scrape_jobs` and print out
 the list of jobs returned.
 
-{% highlight python %}
+```python
 def scrape(self):
     jobs = self.scrape_jobs()
     for job in jobs:
         print job
-{% endhighlight %}
+```
 
 The `scrape_jobs` method is where we implement the [steps](#steps) discussed earlier.
 
-{% highlight python linenos %}
+```python
 def scrape_jobs(self, max_pages=3):
     jobs = []
     pageno = 0
@@ -276,7 +276,7 @@ def scrape_jobs(self, max_pages=3):
         self.search_request['pageNumber'] = pageno
 
     return jobs
-{% endhighlight %}
+```
 
 On line 4 we initialize `pageNumber` to 0 to get the first page of jobs.
 
@@ -292,15 +292,15 @@ On lines 33-34 we increment the page and then repeat our previous steps until we
 
 Let's try it out by instantiating the scraper and calling `scrape()`.
 
-{% highlight python %}
+```python
 if __name__ == '__main__':
     scraper = AppleJobsScraper()
     scraper.scrape()
-{% endhighlight %}
+```
 
 Now run it from the command line:
 
-{% highlight bash %}
+```bash
 $ ./scraper.py | head
 {'title': u'US-Business Leader', 'location': u'Various', 'jobid': u'USABL'}
 {'title': u'US-Business Manager', 'location': u'Various', 'jobid': u'USABM'}
@@ -312,7 +312,7 @@ $ ./scraper.py | head
 {'title': u'US-Manager', 'location': u'Various', 'jobid': u'USAMN'}
 {'title': u'US-Market Leader', 'location': u'Various', 'jobid': u'USAML'}
 {'title': u'US-Genius', 'location': u'Various', 'jobid': u'USAGN'}
-{% endhighlight %}
+```
 
 If you'd like to see the full implementation, the source code for this article is available on 
 [github](https://github.com/thayton/apple-job-scraper).

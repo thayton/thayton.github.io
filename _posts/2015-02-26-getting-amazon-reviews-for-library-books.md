@@ -44,7 +44,7 @@ We'll use [Mechanize](http://wwwsearch.sourceforge.net/mechanize/) to send our r
 will take two arguments. One argument to specify the url of the advanced search page and the
 other to specify the search string.
 
-{% highlight python %}
+```python
 #!/usr/bin/env python
 
 import re
@@ -69,11 +69,11 @@ if __name__ == '__main__':
 
     scraper = Scraper()
     scraper.scrape(args.url, args.query)
-{% endhighlight %}
+```
 
 A top level `scrape()` method encapsulates all of the logic.
 
-{% highlight python %}
+```python
 def scrape(self, url, q):
    books = self.search_library_books(url=url, q=q)
    self.get_amazon_reviews(books)
@@ -81,7 +81,7 @@ def scrape(self, url, q):
 
    for b in books:
        print b['rating'], b['title']
-{% endhighlight %}
+```
 
 ### Scraping the Library Catalogue
 
@@ -89,7 +89,7 @@ To scrape the book titles and ISBN numbers from the Sirsi catalogue, we open up 
 fill out and submit the form. The search results are then filtered based on the `class` and `id` attributes 
 of the elements containing the title and ISBN number. 
 
-{% highlight python %}
+```python
 def search_library_books(self, url, q):
     '''
     Scrape the first page of books for the given query.
@@ -127,7 +127,7 @@ def search_library_books(self, url, q):
         books.append(book)
 
     return books
-{% endhighlight %}
+```
 
 Note that we scrape the ISBN13 number and then convert it to ISBN10. That's because while the 
 Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product links. [[1]][amazon_linking] [[2]][amazon_isbnnum]
@@ -137,7 +137,7 @@ Sirsi catalogue uses ISBN13 numbers, Amazon uses ISBN10 numbers for product link
 on how ISBN numbers are formatted. To convert an ISBN13 number to ISBN10, we chop off the first 3 digits of the ISBN13 number, then
 calculate the ISBN10 check digit for the next nine numbers. The nine numbers plus the check digit is the ISBN10 number.
 
-{% highlight python %}
+```python
 def isbn13to10(self, isbn13):
     '''
     Convert an ISBN13 number to ISBN10 by chomping off the
@@ -147,14 +147,14 @@ def isbn13to10(self, isbn13):
     first9 = isbn13[3:][:9]
     isbn10 = first9 + self.isbn10_check_digit(first9)
     return isbn10
-{% endhighlight %}
+```
 
 The formula for calculating an ISBN10 check digit (the 10th number) given the first nine numbers
 is as follows:
 
 (11 - ((10x<sub>1</sub> + 9x<sub>2</sub> + 8x<sub>3</sub> + 7x<sub>4</sub> + 6x<sub>5</sub> + 5x<sub>6</sub> + 4x<sub>7</sub> + 3x<sub>8</sub> + 2x<sub>9</sub>) mod 11)) mod 11
 
-{% highlight python %}
+```python
 def isbn10_check_digit(self, isbn10):
     '''
     Given the first 9 digits of an ISBN10 number calculate
@@ -175,7 +175,7 @@ def isbn10_check_digit(self, isbn10):
         return 'x'
     else:
         return str(v)
-{% endhighlight %}
+```
 
 ### Amazon Reviews
 
@@ -186,7 +186,7 @@ http://www.amazon.com/gp/product/\<ISBN10\>
 
 Then we can go to that page and scrape the rating for the book.
 
-{% highlight python %}
+```python
 def get_amazon_reviews(self, books):
     '''
     Get the Amazon review/rating for each book in books[]
@@ -202,20 +202,20 @@ def get_amazon_reviews(self, books):
         f = float(m.group(0))
 
         b['rating'] = f
-{% endhighlight %}
+```
 
 ### Sorting the Results
 
 Once we've got all the rating for all of the books, we sort them according to their rating.
 
-{% highlight python %}
+```python
 def rank_by_reviews(self, books):
     ''' 
     Sort books by rating with highest rated books first
     '''
     newlist = sorted(books, key=lambda k: k['rating'], reverse=True) 
     return newlist
-{% endhighlight %}
+```
 
 ### Running It
 

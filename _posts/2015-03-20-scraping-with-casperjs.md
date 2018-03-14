@@ -35,7 +35,7 @@ In the following listing, we create a Casper instance and have it open the jobs 
 calling `waitForSelector()`. Once the table has loaded, we call `processPage()`. If the table does not load before the default 
 timeout occurs, the script exits by calling `terminate()`.
 
-{% highlight javascript %}
+```javascript
 /**
  * Scrape job title, url, and location from Taleo jobs page at 
  * https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl
@@ -59,7 +59,7 @@ var terminate = function() {
 casper.start(url);
 casper.waitForSelector('table#jobs', processPage, terminate);
 casper.run();
-{% endhighlight %}
+```
 
 The `processPage()` function is where the bulk of our work will occur. It has three parts:
 
@@ -69,7 +69,7 @@ The `processPage()` function is where the bulk of our work will occur. It has th
 
 We'll go over each part in turn. But first, here's the listing:
 
-{% highlight javascript %}
+```javascript
 var processPage = function() {
     // Part 1: Scrape and print the jobs in the jobs table
     jobs = this.evaluate(getJobs);
@@ -90,7 +90,7 @@ var processPage = function() {
         }, processPage, terminate);
     });
 };
-{% endhighlight %}
+```
 
 ### Part 1: Scrape and print the jobs in the jobs table
 
@@ -105,7 +105,7 @@ If we inspect the jobs table, we see that:
 Based on the above attributes, we have all the information we need extract the title, url, and location for each
 job in the table.
 
-{% highlight javascript %}
+```javascript
 function getJobs() {
     var rows = document.querySelectorAll('table#jobs tr[id^="job"]');
     var jobs = [];
@@ -123,18 +123,18 @@ function getJobs() {
 
     return jobs;       
 }
-{% endhighlight %}
+```
 
 ### Part 2: Exit if we're finished scraping
 
 We stop scraping once we've scraped three pages worth of results or we encounter a page
 with no jobs table, whichever comes first.
 
-{% highlight javascript %}
+```javascript
 if (currentPage >= 3 || !this.exists("table#jobs")) {
     return terminate.call(casper);
 }
-{% endhighlight %}
+```
 
 ### Part 3: Click the Next link and wait for the next page of jobs to load
 
@@ -150,7 +150,7 @@ If you inspect the Next link, you see it can be identified using the CSS selecto
 We'll use Casper's `thenClick()` function to click the Next link and then use `waitFor()` to determine
 once the next page of jobs has loaded.
 
-{% highlight javascript %}
+```javascript
 currentPage++;
 
 this.thenClick("div#jobPager a#next").then(function() {
@@ -158,7 +158,7 @@ this.thenClick("div#jobPager a#next").then(function() {
         return currentPage === this.evaluate(getSelectedPage);
     }, processPage, terminate);
 });
-{% endhighlight %}
+```
 
 So how do know when the next page of results has loaded? Let's go back and look at the pager again.
 
@@ -172,21 +172,21 @@ link. If we inspect this link, we see that it's a list element with the CSS clas
 This means that we can write a `getSelectedPage()` function to find the currently selected page using the class 
 selector `li[class="navigation-link-disabled"]` and then returning that list element's value as an integer.
 
-{% highlight javascript %}
+```javascript
 // Return the current page by looking for the disabled page number link in the pager
 function getSelectedPage() {
     var el = document.querySelector('li[class="navigation-link-disabled"]');
     return parseInt(el.textContent);
 }
-{% endhighlight %}
+```
 
 Now let's put this all together: we can determine when the next page has finished loading by clicking on the 
 Next link and then waiting for the value returned by `getSelectedPage()` link to become equal to `currentPage`. 
 Hence the comparison,
 
-{% highlight javascript %}
+```javascript
 return currentPage === this.evaluate(getSelectedPage);
-{% endhighlight %}
+```
 
 Once these two values are the same, we can start scraping the jobs table knowing it has been updated 
 with the next page of jobs.

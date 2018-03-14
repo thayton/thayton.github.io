@@ -35,7 +35,7 @@ The job search results in the above table are dynamically generated from JSON da
 Specifically, the jobs come from a form named `frmResults` with a hidden input field named `ctl00$MainContent$GridFormatter$json_tabledata`. 
 The value attribute in this field contains the jobs.
 
-{% highlight html %}
+```html
 <form name="frmResults" method="post"  role="main">
   ...
   <input name="ctl00$MainContent$GridFormatter$json_tabledata" 
@@ -45,7 +45,7 @@ The value attribute in this field contains the jobs.
     value="<see-table-below>"
   />
 </form>
-{% endhighlight %}
+```
 
 Here's the JSON data for one of the jobs shown in table form for readability.
 
@@ -63,12 +63,12 @@ Here's the JSON data for one of the jobs shown in table form for readability.
     </tr>
     <tr>
       <td>FORMTEXT13</td> 
-      <td>{% highlight html %}
+      <td>```html
 <input type='hidden' value="leadteacher">
 </input>
 <a href="jobdetails.aspx?SID=%5eY4xaA%2fHuxO7HUAxWgQZaaF5irzzrwqM_slp_rhc_Fd7LOkibpxyWh7faRjNg%2f29PF5WbMpEH&jobId=427661&type=search&JobReqLang=1&recordstart=1&JobSiteId=5216&JobSiteInfo=427661_5216&GQId=480">
   Child Care Lead Teacher
-</a>{% endhighlight %}</td>
+</a>```</td>
     </tr>
     <tr>
       <td>FORMTEXT10</td>
@@ -84,7 +84,7 @@ Here's the JSON data for one of the jobs shown in table form for readability.
     </tr>
     <tr>
       <td>currentRowHiddenData</td>
-      <td>{% highlight html %}
+      <td>```html
 <input type='hidden' 
   name='hidJobSiteId' 
   id='hidJobSiteId_427661'  
@@ -92,7 +92,7 @@ Here's the JSON data for one of the jobs shown in table form for readability.
 <input type='hidden' 
   name='hidJobGQId'  
   value='480' />
-      {% endhighlight %}</td>
+      ```</td>
     </tr>
     <tr>
       <td>AutoReq</td>
@@ -108,7 +108,7 @@ Here's the JSON data for one of the jobs shown in table form for readability.
     </tr>
     <tr>
       <td>chkColumn</td>
-      <td>{% highlight html %}
+      <td>```html
 <label for='427661'></label>
 <div style='text-align:center'>
   <input type='checkbox' title='leadteacher' 
@@ -117,7 +117,7 @@ Here's the JSON data for one of the jobs shown in table form for readability.
       onClick=javascript:onCheckJob('427661',427661,'1','480','1'); 
   />
 </div>
-     {% endhighlight %}</td>
+     ```</td>
     </tr>
   </tbody>
 </table>
@@ -144,7 +144,7 @@ Let's get started.
 
 First we'll sketch out a base class to handle scraping Brassring job sites.
 
-{% highlight python %}
+```python
 import re, json
 import mechanize
 import urlparse
@@ -158,45 +158,45 @@ class BrassringJobScraper(object):
         self.soup = None
         self.jobs = []
         self.numJobsSeen = 0
-{% endhighlight %}
+```
 
 Now, let's add a `scrape` method that will encapsulate all of the logic.
 
-{% highlight python %}
+```python
 def scrape(self):
     self.open_search_openings_page()
     self.submit_search_form()
     self.scrape_jobs()
-{% endhighlight %}
+```
 
 Our search openings method opens the landing page and then follows the
 search openings link. We use a case-insensitive regex for the link search
 because the case for this link varies from site to site.
 
-{% highlight python %}
+```python
 def open_search_openings_page(self):
     r = re.compile(r'Search openings', re.I)
     self.br.open(self.url)
     self.br.follow_link(self.br.find_link(text_regex=r))
-{% endhighlight %}
+```
 
 Now we write the method to submit the search form. We don't set any keywords
 or filter by location. We want to get all of the jobs back.
 
-{% highlight python %}
+```python
 def submit_search_form(self):
     self.soupify_form(soup=None, form_name='aspnetForm')
     self.br.select_form('aspnetForm')
     self.br.submit()
     self.soup = BeautifulSoup(self.br.response().read())
-{% endhighlight %}
+```
 
 Sometimes mechanize will throw the error `ParseError: OPTION outside of SELECT`
 when you try to select a form. The call to `soupify_form` handles this case. It 
 runs the form through BeautifulSoup and sets the resulting HTML as mechanize's 
 current response page:
 
-{% highlight python %}
+```python
 def soupify_form(self, soup, form_name):
     '''
     Selecting a form with mechanize sometimes throws the error
@@ -218,12 +218,12 @@ def soupify_form(self, soup, form_name):
     )
     self.br.set_response(resp)
 
-{% endhighlight %}
+```
 
 Now comes the meat of our scraper. We find the control containing the jobs and load in the JSON data from 
 that control's value. 
 
-{% highlight python %}
+```python
 def scrape_jobs(self):
     while not self.seen_all_jobs():
         t = 'ctl00_MainContent_GridFormatter_json_tabledata'
@@ -246,7 +246,7 @@ def scrape_jobs(self):
 
         # Next page
         self.goto_next_page()
-{% endhighlight %}
+```
 
 ### Pagination
 
@@ -258,7 +258,7 @@ to determine once we've reached the last page.
 If we click on the `Next` link from the first page and inspect the network data we see the 
 following POST variables sent to the server:
 
-{% highlight javascript %}
+```javascript
 JobInfo:%%
 recordstart:51
 totalrecords:917
@@ -266,12 +266,12 @@ sortOrder:ASC
 sortField:FORMTEXT13
 sorting:
 JobSiteInfo:
-{% endhighlight %}
+```
 
 This POST data comes form a form named `frmMassSelect`. This form also contains the total
 number of jobs in a control named `totalRecords`. 
 
-{% highlight html %}
+```html
 <form name="frmMassSelect" method="post" action="searchresults.aspx?SID=^Ma_slp_rhc_ooksXuPqc_slp_rhc__slp_rhc_4aAdjbWLwoLkE4hXrS/w7UiUsLxM6pDX4cUsEv3OAkRPQnDuWC" style="visibility:hidden" aria-hidden="true">
   <input type="hidden" name="JobInfo" value="">
   <input type="hidden" name="recordstart" value="1">
@@ -281,7 +281,7 @@ number of jobs in a control named `totalRecords`.
   <input type="hidden" name="sorting" value="">
   <input type="hidden" name="JobSiteInfo" value="">
 </form>
-{% endhighlight %}
+```
 
 The next page functionality works by specifying the starting record in a 50-record result 
 set in a control field named `recordstart`. In other words, `recordstart` is 1 and 51 for 
@@ -290,30 +290,30 @@ result sets `[1,50]`, `[51,100]`, which correspond to pages 1 and 2 respectively
 To get each next page of results, we'll submit the `frmMassSelect` form with the `recordstart`
 control set to the number of jobs we've already seen plus 1. 
 
-{% highlight python %}
+```python
 def goto_next_page(self):
     self.br.select_form('frmMassSelect')
     self.br.form.set_all_readonly(False)
     self.br.form['recordstart'] = '%d' % (self.numJobsSeen + 1)
     self.br.submit()
     self.soup = BeautifulSoup(self.br.response().read())
-{% endhighlight %}
+```
 
 The `seen_all_jobs` method extracts the `totalrecords` field from the form
 and determines if the number of jobs we've seen matches the total number of
 jobs. If so, it means we've reached the final page of job results.
 
-{% highlight python %}
+```python
 def seen_all_jobs(self):
     self.soupify_form(soup=self.soup, form_name='frmMassSelect')
     self.br.select_form('frmMassSelect')
     return self.numJobsSeen >= int(self.br.form['totalrecords'])
-{% endhighlight %}
+```
 
 Now onto to the task of extracting the jobs data. The following methods will be used to extract 
 the title, location and jobs page url:
 
-{% highlight python %}
+```python
 def get_title_from_job_dict(self, job_dict):
     pass
 
@@ -328,7 +328,7 @@ def get_url_from_job_dict(self, job_dict):
     u = urlparse.urljoin(self.br.geturl(), a['href'])
     u = self.refine_url(u)
     return u
-{% endhighlight %}
+```
 
 For our implementation, we're going to leave the first three methods empty so that they can be implemented 
 in derived classes. We do this because the keys used to extract the job title, location and url change 
@@ -342,7 +342,7 @@ implement three methods to scrape all of the jobs. This is because all of our lo
 is encapsulated in the BrassringJobScraper base class. This means we can easily add
 new sites that use the Brassring ATS with very little additional code.
 
-{% highlight python %}
+```python
 #!/usr/bin/env python
 
 import sys, signal
@@ -383,18 +383,18 @@ if __name__ == '__main__':
 
     for j in scraper.jobs:
         print j
-{% endhighlight %}
+```
 
 The final portion to discuss is the job url which is constructed in the `get_url_from_job_dict`
 method.
 
-{% highlight python %}
+```python
 def get_url_from_job_dict(self, job_dict):
     a = self.get_soup_anchor_from_job_dict(job_dict)
     u = urlparse.urljoin(self.br.geturl(), a['href'])
     u = self.refine_url(u)
     return u
-{% endhighlight %}
+```
 
 We want the link to each job to have the following format. 
 
@@ -411,7 +411,7 @@ The only parameter we're interested in is `jobId`. We must trim the url down to 
 The `refine_url` method filters out all other parameters except `jobID` and tacks on the `siteid` 
 and `partnerid` parameters to get our final result.
 
-{% highlight python %}
+```python
 def refine_url(self, job_url):
     """
     """
@@ -424,7 +424,7 @@ def refine_url(self, job_url):
     url = urlutil.url_query_add(url, items.iteritems())
 
     return url
-{% endhighlight %}
+```
 
 The method makes use of a helper module named [urlutil](https://github.com/thayton/brassring/blob/master/urlutil.py)
 that contains the code for extracting, filtering, and appending query parameters to urls. 
@@ -433,7 +433,7 @@ that contains the code for extracting, filtering, and appending query parameters
 
 That's it. Now let's try running it.
 
-{% highlight bash %}
+```bash
 $ ./brighthorizons.py 
 {'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=64989', 'location': u'Racine, Wisconsin', 'title': u"Two's Teacher "}
 {'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65036', 'location': u'Deerfield & Northbrook, Illinois', 'title': u"Two's Teacher "}
@@ -441,7 +441,7 @@ $ ./brighthorizons.py
 {'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65113', 'location': u'Des Moines, Iowa', 'title': u"Two's Teacher "}
 {'url': u'https://sjobs.brassring.com/TGWebHost/jobdetails.aspx?siteid=5216&partnerid=25595&jobId=65120', 'location': u'Iowa City, Iowa', 'title': u"Two's Teacher "}
 ...
-{% endhighlight %}
+```
 
 If you'd like to see a working version of the code developed in this post, it's available on github
 [here](https://github.com/thayton/brassring).

@@ -58,7 +58,7 @@ These are the variables our scraper needs to send when it submits the form. The 
 shows the full list of variables with the `__VIEWSTATE` value truncated to make the whole thing
 easier to read.
 
-{% highlight text %}
+```text
 ctl00$ScriptManager1:ctl00$ScriptManager1|ctl00$ContentPlaceHolder1$btnSearch
 __EVENTTARGET:
 __EVENTARGUMENT:
@@ -76,14 +76,14 @@ ctl00$ContentPlaceHolder1$hdnTabShow:0
 ctl00$ContentPlaceHolder1$hdnTotalRows:
 __ASYNCPOST:true
 ctl00$ContentPlaceHolder1$btnSearch:Search
-{% endhighlight %}
+```
 
 If you're very observant you'll notice that the first variable in the list `ctl00$ScriptManager1`
 doesn't show up in the form. 
 
 That variable gets created dynamically:
 
-{% highlight javascript %}
+```javascript
 <script type="text/javascript">
 //<![CDATA[
 Sys.WebForms.PageRequestManager._initialize(
@@ -92,19 +92,19 @@ Sys.WebForms.PageRequestManager._initialize(
 );
 ...
 //]]>
-{% endhighlight %}
+```
 
 We'll have to create this variable and set its value manually in the scraper.
 
 The same goes for the `__ASYNCPOST:true` key value pair. In that case, the variable is 
 created dynamically when the form is submitted:
 
-{% highlight javascript %}
+```javascript
 function Sys$WebForms$PageRequestManager$_onFormSubmit(evt) {
   ...
   formBody.append("__ASYNCPOST=true&");
 }
-{% endhighlight %}
+```
 
 We'll have to create that key value pair manually too.
 
@@ -139,11 +139,11 @@ the `ctl00_ContentPlaceHolder1_pnlgrdSearchResult` variable.
 If you inspect the HTML of the results in your browser you'll see that the ID matches the `id` attribute 
 of the div where the results are dynamically injected. 
 
-{% highlight html %}
+```html
 <div id='ctl00_ContentPlaceHolder1_pnlgrdSearchResult'>
   ( Here's where the HTML gets inserted from the AJAX response )
 </div>
-{% endhighlight %}
+```
 
 The response is basically an instruction to update `div#ctl00_ContentPlaceHolder1_pnlgrdSearchResult` 
 with the data in the Content column.
@@ -157,7 +157,7 @@ in just a moment.
 
 For now, let's look at the HTML results.
 
-{% highlight html %}
+```html
 <input type="hidden" name="ctl00$ContentPlaceHolder1$hdnTabShow" id="ctl00_ContentPlaceHolder1_hdnTabShow" value="0" />
 <div>
   <div style="font-weight: bold;">
@@ -224,16 +224,16 @@ For now, let's look at the HTML results.
     </tr>
   </table>
 </div>
-{% endhighlight %}
+```
 
 I've pulled out one of the result links so we can see the format they use:
 
-{% highlight html %}
+```html
 <a id="ctl00_ContentPlaceHolder1_grdSearchResult_ctl03_hpFirmName" 
    href="frmFirmDetails.aspx?FirmID=F12ED5B3-88A1-49EC-96BC-ACFAA90C68F1">
    Kumin Associates, Inc.
 </a>
-{% endhighlight %}
+```
 
 We can match the `href` of these links using the regex 
 
@@ -254,14 +254,14 @@ Right click on the page 2 link and select Inspect Element to inspect the page 2 
 
 You'll see that the HTML for each page link has the following format.
 
-{% highlight html %}
+```html
 <a class="LinkPaging" href="javascript:__doPostBack('ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03','')">2</a>
-{% endhighlight %}
+```
 
 So when you click a page link in the pager the `__doPostBack()` function is called with the first argument set. Here's 
 the defininition of `__doPostBack`:
 
-{% highlight javascript %}
+```javascript
 var theForm = document.forms['aspnetForm'];
 if (!theForm) {
     theForm = document.aspnetForm;
@@ -273,7 +273,7 @@ function __doPostBack(eventTarget, eventArgument) {
         theForm.submit();
     }
 }
-{% endhighlight %}
+```
 
 So `__doPostBack()` sets the `__EVENTTARGET` variable to the first argument passed and submits the search form. 
 
@@ -284,7 +284,7 @@ Now let's see this in action.
 
 Click on the page 2 link so we can inspect the variables in the Network tab of the Developer Tools.
 
-{% highlight text %}
+```text
 ctl00$ScriptManager1:ctl00$ContentPlaceHolder1$pnlgrdSearchResult|ctl00$ContentPlaceHolder1$grdSearchResult$ctl23$ctl03
 ctl00$ContentPlaceHolder1$search:rdbCityState
 ctl00$ContentPlaceHolder1$txtCity:
@@ -302,7 +302,7 @@ __EVENTARGUMENT:
 __VIEWSTATE:/wEPDwUKMTU0OTkzNj...
 __ASYNCPOST:true
 :
-{% endhighlight %}
+```
 
 Once again, notice that `ctl00$ScriptManager1` doesn't show up in the form but it shows up again here, 
 this time with the value
@@ -343,7 +343,7 @@ At this point we've got enough information about how the site works to write our
 Here's the code we'll start out with. As we go along, we'll add the code to implement the 
 scraping logic we discussed in the first part of this post.
 
-{% highlight python %}
+```python
 #!/usr/bin/env python                                                                                                                                                                
 
 """
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     scraper = ArchitectFinderScraper()
     scraper.scrape()
 
-{% endhighlight %}
+```
 
 The bulk of our scraping work will be done in a method named `scrape_state_firms()` that will
 scrape all of the results for a given state, handling pagination in the process. 
@@ -379,13 +379,13 @@ scrape all of the results for a given state, handling pagination in the process.
 First, I'll go over selecting and submitting the form. If you inspect the HTML of the search form
 you'll see that its `name` attribute is set to `aspnetForm`. 
 
-{% highlight html %}
+```html
 <form name="aspnetForm" method="post" action="frmSearch.aspx" onsubmit="javascript:return WebForm_OnSubmit();" id="aspnetForm">
-{% endhighlight %}
+```
 
 We''ll pass that as the argument to mechanize's `select_form()` method. 
 
-{% highlight python %}
+```python
 def scrape_state_firms(self, state_item):
     '''
     Scrape all of the firm listed for a given state 
@@ -397,23 +397,23 @@ def scrape_state_firms(self, state_item):
 
     self.br.select_form('aspnetForm')
     self.br.form['ctl00$ContentPlaceHolder1$drpState'] = [ state_item.name ]
-{% endhighlight %}
+```
 
 Note that I save a copy of the form's HTML. That's so that later, when we do the pagination, we still
 have a copy of the form to work with when we update the variables to get the next page of results.
 
 Now let's print out the controls that mechanize has picked up so far from selecting the form.
 
-{% highlight python %}
+```python
 (Pdb) print '\n'.join(['%s:%s (%s)' % (c.name,c.value,c.disabled) for c in self.br.form.controls])
-{% endhighlight %}
+```
 
 Note that I also print out whether or not a control is disabled. It shows up as True or False in 
 parentheses.
 
 Our print statement shows the following control key value pairs:
 
-{% highlight text %}
+```text
 __EVENTTARGET: (False)
 __EVENTARGUMENT: (False)
 __VIEWSTATE:/wEPDwUKMTU0OTkzNjExN...
@@ -433,7 +433,7 @@ ctl00$ContentPlaceHolder1$btnfrmSearch:Search (True)
 ctl00$ContentPlaceHolder1$hdnTabShow:0 (False)
 ctl00$ContentPlaceHolder1$hdnTotalRows: (False)
 None:None (False)
-{% endhighlight %}
+```
 
 Note that two of the controls, `btnfrmSearch` and `btnAccept` didn't show up in the
 Developer Tools variable list earlier in this post. 
@@ -449,7 +449,7 @@ to enable it before we submit the form.
 Let's do all that and also create controls for `__ASYNCPOST` and `ctl00$ScriptManager1` as discussed
 earlier in this post.
 
-{% highlight python %}
+```python
 def scrape_state_firms(self, state_item):
     ...
     self.br.form.new_control('hidden', '__ASYNCPOST', {'value': 'true'})
@@ -466,12 +466,12 @@ def scrape_state_firms(self, state_item):
     ctl.disabled = False
 
     self.br.submit()
-{% endhighlight %}
+```
 
 Now that we've submitted the form, let's see how to extract and print out the names
 and links of the architecture firms from the results sent back in the AJAX response.
 
-{% highlight python %}
+```python
 def scrape_state_firms(self, state_item):
     ...
     pageno = 2
@@ -498,7 +498,7 @@ def scrape_state_firms(self, state_item):
             break
 
         pageno += 1
-{% endhighlight %}
+```
 
 I create a dictionary of key value pairs out of the AJAX response the server sends. Even though
 the response is actually a string of `Length|Type|ID|Content `four-tuples, treating it as a string
@@ -516,7 +516,7 @@ control values again, create the variables that aren't picked up from the form (
 
 Then we submit the form again and repeat the whole process until we reach the last page of the results.
 
-{% highlight python %}
+```python
 def scrape_state_firms(self, state_item):
     ...
     pageno = 2
@@ -569,23 +569,23 @@ def scrape_state_firms(self, state_item):
         self.br.form.controls.remove(ctl)
 
         self.br.submit()
-{% endhighlight %}
+```
 
 Now let's create a method to get the list of items from the State selection drop down menu. 
 We'll pass each of these items in turn to the `scrape_state_firms()` method we just went over:
 
-{% highlight python %}
+```python
 def get_state_items(self):
     self.br.open(self.url)
     self.br.select_form('aspnetForm')
     items = self.br.form.find_control('ctl00$ContentPlaceHolder1$drpState').get_items()
     return items
-{% endhighlight %}
+```
 
 Finally, let's write a method to drive the whole scraping process by calling the methods we've 
 developed so far:
 
-{% highlight python %}
+```python
 def scrape(self):
     '''
     First we get a list of the states listed in the form select option
@@ -603,7 +603,7 @@ def scrape(self):
 
         print 'Scraping firms for %s' % state_item.attrs['label']
         self.scrape_state_firms(state_item)
-{% endhighlight %}
+```
 
 That's it! If you'd like to see the full implementation that you can experiment with yourself, 
 the source code for this article is available on [github](https://github.com/thayton/architectfinder).

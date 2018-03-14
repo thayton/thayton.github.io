@@ -27,7 +27,7 @@ Note that the first dropdown already has the most recent academic year selected 
 
 If we take a look at the HTML for the form, we see the following:
 
-{% highlight html %}
+```html
 <form action="AUS_SUBJ_CONT.main_display1" method="POST" target="subjects">
   <select name="acadsem">
     <option value="2006_S">Acad Yr 2006 Special Term I</option>
@@ -47,26 +47,26 @@ If we take a look at the HTML for the form, we see the following:
   <input type="button" value="Load Content of Course(s)" 
     onclick="<see-below>">
 </form>
-{% endhighlight %}
+```
 
 The javascript in the `onclick` attribute of the Load Content button
 is shown below. It sets the form action and a control named `boption`
 before submitting the form when the button is clicked.
 
-{% highlight javascript %}
+```javascript
 if (select_option(this.form)) {
   this.form.action='AUS_SUBJ_CONT.main_display1';
   this.form.boption.value='CLoad';
   submit()
 }
-{% endhighlight %}
+```
 
 The task then is to iterate through every item in the `r_course_yr` select dropdown, submit
 the form for that item, and then save the results we get back into a file. 
 
 First lets lay the initial groundwork by sketching out a scraper class. 
 
-{% highlight python %}
+```python
 #!/usr/bin/env python
 
 import sys, signal
@@ -90,7 +90,7 @@ if __name__ == '__main__':
     signal.signal(signal.SIGINT, sigint)
     scraper = NtuEduScraper()
     scraper.scrape()
-{% endhighlight %}
+```
 
 Now lets add a top-level method named `scrape` that performs the following sub-tasks:
 
@@ -98,7 +98,7 @@ Now lets add a top-level method named `scrape` that performs the following sub-t
 * Submit the form for each item
 * Save the results returned for each item
 
-{% highlight python %}
+```python
 def scrape(self):
     '''
     Get the list of items in the second dropdown menu and submit 
@@ -113,7 +113,7 @@ def scrape(self):
 
         results = self.submit_form(item)
         self.item_results_to_file(item, results)
-{% endhighlight %}
+```
 
 Now let's implement each of the sub-tasks in turn.
 
@@ -128,21 +128,21 @@ To get a list of items from the second select menu we need to do the following:
 We can open the page and select the form with the browser object's `open` and `select_form` methods. 
 However, note that the form doesn't have a name attribute. 
 
-{% highlight html %}
+```html
 <form action="AUS_SUBJ_CONT.main_display1" method="POST" target="subjects">
-{% endhighlight %}
+```
 
 As I noted in a [previous post]({% post_url 2014-12-08-form-handling-with-mechanize-and-beautifulsoup %})
 we can use a predicate function to select a form when it doesn't have a name attribute. In this case 
 we'll select it based on its `target` attribute.
 
-{% highlight python %}
+```python
 def select_form(form):
     '''
     Select the course display form
     '''
     return form.attrs.get('target', None) == 'subjects'
-{% endhighlight %}
+```
 
 Now we need to get a list of items for the `r_course_r` select control. 
 
@@ -151,7 +151,7 @@ method to return a list of all the items attached to that control.
 
 Here's the code:
 
-{% highlight python %}
+```python
 def get_items(self):
     '''
     Get the list of items in the second dropdown of the form
@@ -161,7 +161,7 @@ def get_items(self):
 
     items = self.br.form.find_control('r_course_yr').get_items()
     return items
-{% endhighlight %}
+```
 
 ### Part2: Submitting an item and reading the results
 
@@ -178,7 +178,7 @@ to do the following:
 Here's the code. I've added error checking and a simple back-off/delay/retry loop in 
 the event that the first couple of requests fail because we're hitting their server too quickly.
 
-{% highlight python %}
+```python
 def submit_form(self, item):
     '''
     Submit form using selection item.name and write the results
@@ -209,14 +209,14 @@ def submit_form(self, item):
         raise
 
     return self.br.response().read()
-{% endhighlight %}
+```
 
 ### Writing the results to file
 
 We've got the results. Now let's write them into a file whose named is based
 off of the item whose data we're saving:
 
-{% highlight python %}
+```python
 def item_results_to_file(self, item, results):
     label = ' '.join([label.text for label in item.get_labels()])
     label = '-'.join(label.split())
@@ -224,13 +224,13 @@ def item_results_to_file(self, item, results):
     with open("%s.html" % label, 'w') as f:
         f.write(results)
         f.close()
-{% endhighlight %}
+```
 
 ### Final Code
 
 That's it. Now let's try running it.
 
-{% highlight bash %}
+```bash
 $ ./ntu-edu.py
 Generating list of items for form selection
 Got 371 items for form selection
@@ -241,9 +241,9 @@ Writing results for item ACC;GA;2;F to file Accountancy-(GA)-Year-2.html
 Submitting form for item ACC;GA;3;F
 Writing results for item ACC;GA;3;F to file Accountancy-(GA)-Year-3.html
 ^CExiting...
-{% endhighlight %}
+```
 
-{% highlight bash %}
+```bash
 $ ls -1 *.html
 Accountancy-(GA)-Year-1.html
 Accountancy-(GA)-Year-2.html
@@ -255,9 +255,9 @@ Art,-Design-&-Media-(ANIM)-Year-2.html
 Art,-Design-&-Media-(ANIM)-Year-3.html
 Art,-Design-&-Media-Year-1.html
 Art,-Design-&-Media-Year-4.html
-{% endhighlight %}
+```
 
-{% highlight html %}
+```html
 $ head Accountancy-\(GA\)-Year-1.html 
 <BODY BGCOLOR="lightyellow">
 <HTML>
@@ -269,7 +269,7 @@ $ head Accountancy-\(GA\)-Year-1.html
 <B><B><FONT SIZE=2 COLOR=black>2014 2 Accountancy Year 1 (GA)</FONT></B></B>
 </FONT>
 <BR>
-{% endhighlight %}
+```
 
 If you'd like to see a working version of the code in its final form, it's available on github 
 [here](https://github.com/thayton/ntu-edu/blob/master/ntu-edu.py).

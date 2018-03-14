@@ -14,36 +14,36 @@ In this post, I'll show how to set up a project template for scraping with Djang
 First let's set up the environment. Create a directory for the template and start up a
 virtual environment in that directory.
 
-{% highlight bash %}
+```bash
 $ mkdir django_scraping_template && cd django_scraping_template
 $ virtualenv venv
 $ source venv/bin/activate
-{% endhighlight %}
+```
 
 Then install the dependencies (Django obviously being one of them) that you want to use
 for your scraping work:
 
-{% highlight bash %}
+```bash
 $ pip install mechanize
 $ pip install beautifulsoup4
 $ pip install Django
 $ pip freeze > requirements.txt
-{% endhighlight %}
+```
 
 Next create the Django project for the settings and an app for modeling the data:
 
-{% highlight bash %}
+```bash
 $ django-admin.py startproject scraper
 $ cd scraper
 $ python manage.py startapp custom_scraper
-{% endhighlight %}
+```
 
 In the top level directory, create a file named scraper.py. We'll edit that it in a 
 second. 
 
 Your directory layout at this point should look as follows:
 
-{% highlight bash %}
+```bash
 django_scraping_template
 ├── scraper.py
 └── scraper
@@ -61,12 +61,12 @@ django_scraping_template
         │   └── __init__.py
         ├── admin.py
         └── __init__.py
-{% endhighlight %}
+```
 
 Edit the scraper/settings.py file, and change the INSTALLED\_APPS setting to include the string 'custom_scraper'. 
 So it’ll look like this:
 
-{% highlight python %}
+```python
 INSTALLED_APPS = (
     'django.contrib.admin',
     'django.contrib.auth',
@@ -76,19 +76,19 @@ INSTALLED_APPS = (
     'django.contrib.staticfiles',
     'custom_scraper'
 )
-{% endhighlight %}
+```
 
 Edit custom_scraper/models.py and create your model definitions. Then run migrate
 to sync the models into the database.
 
-{% highlight bash %}
+```bash
 $ python manage.py makemigrations
 $ python manage.py migrate
-{% endhighlight %}
+```
 
 Now in the top scraper directory edit the scraper.py file:
 
-{% highlight python %}
+```python
 #!/usr/bin/env python                                                                                                                                                                
 import os
 import sys
@@ -113,16 +113,16 @@ class CustomScraper(object):
 if __name__ == '__main__':
     scraper = CustomScraper()
     scraper.scrape()
-{% endhighlight %}
+```
 
 The model(s) you define in custom_scraper/models.py can now be used in this standalone script.
 
 Now just make the script executable and you're all set.
 
-{% highlight bash %}
+```bash
 $ chmod +x scraper.py
 $ ./scraper.py
-{% endhighlight %}
+```
 
 ## Shameless Plug
 
