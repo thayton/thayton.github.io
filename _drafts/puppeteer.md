@@ -4,7 +4,9 @@ title: Scraping with Puppeteer
 ---
 
 In this post I'll guide you through web scraping with [Puppeteer](https://github.com/GoogleChrome/puppeteer){:target="_blank"}, a Node library used to
-control Chrome (or Chromium) using the DevTools Protocol. 
+control Chrome (or Chromium) using the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/){:target="_blank"}. I'll also cover how
+to use Node's built-in [debugger](https://nodejs.org/api/debugger.html){:target="_blank"} so that you can step through the code to see how everything
+works.
 
 ## Dependencies
 
@@ -250,7 +252,8 @@ async function getStates(page) {
 }
 ```
 
-Now let's go back to `main()` and update it to iterate through the list of states and their option values:
+Now let's go back to `main()` and update it to iterate through the list of states. We'll also add
+code to set the Freelance Status field to `Yes`. 
 
 ```javascript
 async function main() {
@@ -263,6 +266,14 @@ async function main() {
     
     for (const [ i, state ] of states.entries()) {
         console.log(`[${i+1}/${states.length}] Scraping data for ${state.name}`);
+
+        await page.select('#FormContentPlaceHolder_Panel_stateDropDownList', state.value);
+        await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
+
+        await page.click('#FormContentPlaceHolder_Panel_searchButtonStrip_searchButton');
+        await page.waitForSelector('#FormContentPlaceHolder_Panel_resultsGrid');
+
+        break;
     }
     
     browser.close();
@@ -271,40 +282,13 @@ async function main() {
 main();
 ```
 
-Once again I run it in the debugger, setting a breakpoint at the `console.log()` statement that prints
-the state name:
+Here we use `page.select` to select the State and Freelance status values, `page.click` to click the Find Members
+button. After we submit the search by clicking the Find Member search button we wait until the results table appears
+using `waitForSelector`.
 
-```bash
-$ node inspect rid_scraper.js
-< Debugger listening on ws://127.0.0.1:9229/f3393a0c-98f5-4a94-a6e0-be21454d639a
-< For help see https://nodejs.org/en/docs/inspector
-< Debugger attached.
-Break on start in rid_scraper.js:1
-> 1 (function (exports, require, module, __filename, __dirname) { const puppeteer = require('puppeteer');
-  2 const url = 'https://myaccount.rid.org/Public/Search/Member.aspx';
-  3 
-debug> sb(34)
- 29     await page.goto(url);
- 30 
- 31     let states = await getStates(page);
- 32     
- 33     for (const [ i, state ] of states.entries()) {
->34         console.log(`[${i+1}/${states.length}] Scraping data for ${state.name}`);
- 35     }
- 36     
- 37     browser.close();
- 38 }
- 39 
-debug> c
-break in rid_scraper.js:34
- 32     
- 33     for (const [ i, state ] of states.entries()) {
->34         console.log(`[${i+1}/${states.length}] Scraping data for ${state.name}`);
- 35     }
- 36
-```
-
-Now enter the `repl` command so we can examine the `i` and `states` variables:
+Now run the script in the debugger, so you can step through the code a line at a time and watch as the State and
+Freelance status fields get updated as the code runs. If you'd like to examine the values of the variables as you're
+stepping through the code use the `repl` command:
 
 ```bash
 debug> repl
@@ -319,50 +303,6 @@ Press Ctrl + C to leave debug repl
 > ^C
 ```
 
-```javascript
-/*
- * Wait until elem becomes detached from DOM
- */
-async function waitUntilStale(page, elem) {
-    await page.waitForFunction(
-        e => !e.ownerDocument.contains(e),
-        { polling: 'raf' }, elem
-    );
-}
-```
-
-```javascript
-async function setMaxPageSize(page) {
-    let html = await page.content();
-    let pageSizeNameRe = new RegExp(
-        'ctl00\\$FormContentPlaceHolder\\$Panel\\$resultsGrid\\$ctl\\d+\\$ctl\\d+'
-    );
-
-    let match = pageSizeNameRe.exec(html);
-    if (match.length <= 0) {
-        return;
-    } 
-
-    let pageSizeName = match[0];
-    let resultsTable = await page.$('#FormContentPlaceHolder_Panel_resultsGrid');    
-
-    await page.select(`select[name="${pageSizeName}"]`, '50');
-
-    /*
-     * Selecting the page size triggers an ajax request for the new table results. 
-     * We need to wait until that new table data gets loaded before trying to scrape.
-     * So we wait until the old member table gets detached from the DOM as the signal
-     * that the new table has been loaded
-     */
-    await waitUntilStale(page, resultsTable);
-}
-```
-
-![Before Page 2](/assets/puppeteer/before_page_2.png)
-![After Page 2](/assets/puppeteer/after_page_2.png)
-
-![Page 2 link](/assets/puppeteer/page2_link.png)
-![Page 2 current](/assets/puppeteer/page2_current.png)
 
 ```javascript
 async function scrapeMemberTable(page) {
@@ -418,6 +358,13 @@ async function scrapeAllPages(page) {
 }
 ```
 
+
+![Before Page 2](/assets/puppeteer/before_page_2.png)
+![After Page 2](/assets/puppeteer/after_page_2.png)
+
+![Page 2 link](/assets/puppeteer/page2_link.png)
+![Page 2 current](/assets/puppeteer/page2_current.png)
+
 ```javascript
 /*------------------------------------------------------------------------------
  * Look for link for pageno in pager. So if pageno was 6 we'd look for 'Page$6' 
@@ -448,5 +395,44 @@ async function gotoNextPage(page, pageno) {
     }
 
     return noMorePages;    
+}
+```
+
+```javascript
+/*
+ * Wait until elem becomes detached from DOM
+ */
+async function waitUntilStale(page, elem) {
+    await page.waitForFunction(
+        e => !e.ownerDocument.contains(e),
+        { polling: 'raf' }, elem
+    );
+}
+```
+
+```javascript
+async function setMaxPageSize(page) {
+    let html = await page.content();
+    let pageSizeNameRe = new RegExp(
+        'ctl00\\$FormContentPlaceHolder\\$Panel\\$resultsGrid\\$ctl\\d+\\$ctl\\d+'
+    );
+
+    let match = pageSizeNameRe.exec(html);
+    if (match.length <= 0) {
+        return;
+    } 
+
+    let pageSizeName = match[0];
+    let resultsTable = await page.$('#FormContentPlaceHolder_Panel_resultsGrid');    
+
+    await page.select(`select[name="${pageSizeName}"]`, '50');
+
+    /*
+     * Selecting the page size triggers an ajax request for the new table results. 
+     * We need to wait until that new table data gets loaded before trying to scrape.
+     * So we wait until the old member table gets detached from the DOM as the signal
+     * that the new table has been loaded
+     */
+    await waitUntilStale(page, resultsTable);
 }
 ```
