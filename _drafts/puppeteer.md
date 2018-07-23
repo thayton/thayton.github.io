@@ -354,14 +354,14 @@ async function scrapeMemberTable(page) {
 We collect all the data in each table row using the headers as keys to create a dictionary of results.
 
 At this point, we're able to scrape the first page of results, but we need to be able to iterate through all
-of the pages of results. If you look at the pager below the results table, you'll see that subsequent
-pages show up as links but that the current page does not:
+of the pages. If you look at the pager below the results table, you'll see that subsequent pages show up as
+links but the current page does not:
 
 ![Before Page 2](/assets/puppeteer/before_page_2.png)
 
 ![After Page 2](/assets/puppeteer/after_page_2.png)
 
-If we inspect the pages in we can see the pattern to use to look for the next page links.
+Inspect the pager to see the pattern for the next page links.
 
 ![Page 2 link](/assets/puppeteer/page2_link.png)
 
@@ -369,8 +369,8 @@ And the pattern for the current page.
 
 ![Page 2 current](/assets/puppeteer/page2_current.png)
 
-Once we click on the next page's link, we'll need to wait for it to become the current page. We can do
-that by waiting for the page number to appear within a `<span>`:
+Once we click on the next page's link, we'll need to wait for it to become the current page. We do that by
+waiting for the page number we click on to appear within a `<span>`:
 
 ```javascript
 /*------------------------------------------------------------------------------
