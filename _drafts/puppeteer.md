@@ -209,9 +209,9 @@ Now that you've seen the basics of how to use the debugger, let's start adding t
 
 ## Implementation
 
-As I stated earlier in the article, the [form](https://myaccount.rid.org/Public/Search/Member.aspx) we're scraping requires
-us to fill out at least two fields. In our code those will be the `Freelance Status` and `State` fields. Let's start
-with the `Freelance Status` first. Inspect the `Freelance Status` dropdown in Chrome developer tools to see its `id` value:
+As I stated earlier, the [form](https://myaccount.rid.org/Public/Search/Member.aspx) we're scraping requires us to fill
+out at least two fields. In our code those will be the Freelance Status and State fields. Inspect the Freelance Status
+dropdown in Chrome developer tools to see its `id` value:
 
 ```html
 <select id="FormContentPlaceHolder_Panel_freelanceDropDownList">
@@ -227,19 +227,7 @@ Now that we have the `id`, we can select the `Yes` option for the Freelance Stat
 await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
 ```
 
-Next, inspect the State dropdown menu to see its `id`:
-
-```html
-<select id="FormContentPlaceHolder_Panel_stateDropDownList">
-	<option selected="selected" value=""></option>
-	<option value="d8fcccc5-cf2f-e511-80c5-00155d631510">Alabama</option>
-	<option value="dafcccc5-cf2f-e511-80c5-00155d631510">Alaska</option>
-	<option value="befcccc5-cf2f-e511-80c5-00155d631510">Alberta</option>
-        ...
-</select>
-```
-
-To retrieve all of the states, we'll first create a generic function that returns a list of all the options under a select element.
+To retrieve all of the states, we'll first create a generic function that returns a list of the options under a select element.
 We'll use Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args)
 function to locate the `<select>` element that matches `selector` and return all of the available options for that element as an array
 of text,value pairs.
@@ -259,6 +247,18 @@ async function getSelectOptions(page, selector) {
 
     return options;
 }
+```
+
+Next, inspect the State dropdown menu to see its `id`:
+
+```html
+<select id="FormContentPlaceHolder_Panel_stateDropDownList">
+	<option selected="selected" value=""></option>
+	<option value="d8fcccc5-cf2f-e511-80c5-00155d631510">Alabama</option>
+	<option value="dafcccc5-cf2f-e511-80c5-00155d631510">Alaska</option>
+	<option value="befcccc5-cf2f-e511-80c5-00155d631510">Alberta</option>
+        ...
+</select>
 ```
 
 Now we can easily retrieve the state option values using:
@@ -302,9 +302,8 @@ async function main() {
 main();
 ```
 
-Here we use `page.select` to select the State and Freelance status options.  `page.click` clicks the Find Members
-search button. After we submit the search by clicking the Find Member search button we wait until the results table appears
-using `waitForSelector`.
+First we use `page.select` to select the State and Freelance Status options. Then `page.click` clicks the Find Members
+search button. After we submit the search we wait until the results table appears using `waitForSelector`.
 
 Now run `node inspect rid_scraper.js` so that you can step through the code a line at a time and see the State and
 Freelance Status fields get updated in the browser being controlled by the script. You can examine the values of the
@@ -323,6 +322,7 @@ Press Ctrl + C to leave debug repl
 > ^C
 ```
 
+Now that we've submitted the form, we'll create a `scrapeMemberTable` to collect the results from table:
 
 ```javascript
 async function scrapeMemberTable(page) {
@@ -351,39 +351,26 @@ async function scrapeMemberTable(page) {
 }
 ```
 
-```javascript
-async function scrapeAllPages(page) {
-    let results = [];
-    let pageno = 2;
-    
-    while (true) {
-        console.log(`Scraping page ${pageno - 1}`);
-        
-        results = results.concat(
-            await scrapeMemberTable(page)
-        );
+We collect all the data in each table row using the headers as keys to create a dictionary of results.
 
-        const noMorePages = await gotoNextPage(page, pageno++)
-        if (noMorePages) {
-            break;
-        }
-    }
-
-    /*
-     * The pager won't reset back to page 1 on its own so we have to explicitly 
-     * click on the page 1 link
-     */
-    await gotoFirstPage(page);
-    return results;
-}
-```
-
+At this point, we're able to scrape the first page of results, but we need to be able to iterate through all
+of the pages of results. If you look at the pager below the results table, you'll see that subsequent
+pages show up as links but that the current page does not:
 
 ![Before Page 2](/assets/puppeteer/before_page_2.png)
+
 ![After Page 2](/assets/puppeteer/after_page_2.png)
 
+If we inspect the pages in we can see the pattern to use to look for the next page links.
+
 ![Page 2 link](/assets/puppeteer/page2_link.png)
+
+And the pattern for the current page.
+
 ![Page 2 current](/assets/puppeteer/page2_current.png)
+
+Once we click on the next page's link, we'll need to wait for it to become the current page. We can do
+that by waiting for the page number to appear within a `<span>`:
 
 ```javascript
 /*------------------------------------------------------------------------------
@@ -417,6 +404,35 @@ async function gotoNextPage(page, pageno) {
     return noMorePages;    
 }
 ```
+
+```javascript
+async function scrapeAllPages(page) {
+    let results = [];
+    let pageno = 2;
+    
+    while (true) {
+        console.log(`Scraping page ${pageno - 1}`);
+        
+        results = results.concat(
+            await scrapeMemberTable(page)
+        );
+
+        const noMorePages = await gotoNextPage(page, pageno++)
+        if (noMorePages) {
+            break;
+        }
+    }
+
+    /*
+     * The pager won't reset back to page 1 on its own so we have to explicitly 
+     * click on the page 1 link
+     */
+    await gotoFirstPage(page);
+    return results;
+}
+```
+
+
 
 ```javascript
 /*
