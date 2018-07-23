@@ -405,6 +405,10 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
+Now that we have a way to go to the next page, we iterate through all of pages, collecting the results
+on each page as we go. Once we reach the last page, the function returns `true` to indicate that there's
+no more pages left.
+
 ```javascript
 async function scrapeAllPages(page) {
     let results = [];
@@ -432,6 +436,38 @@ async function scrapeAllPages(page) {
 }
 ```
 
+At the end of the `scrapeAllPages` is a call to `gotoFirstPage`. This function takes us back to the first page of results.
+Why is this necessary? Because once you get to the last page and start a new search the pager does not reset.
+
+In other words, if you're on the last of the results for Alabama and then you do a search for Alaska, the laste page of
+results for Alaska will come up instead of the first page.
+
+In order to handle this we explicitly click the page 1 link before starting a new search:
+
+```javascript
+/*------------------------------------------------------------------------------
+ * Go back to the first page of results in order to reset the pager. Once the 
+ * first page link is clicked and becomes the current page the page 1 link will 
+ * appear inside of <span>1</span>. So we can determine once page 1 has finished
+ * loading by wait inguntil page 1 appears inside of this span. 
+ *
+ * Note that there might not be a page 1 link because there was only one page of 
+ * results. In that case the page will still show up as <span>1</span> element. 
+ */
+async function gotoFirstPage(page) {
+    let firstPageLinkXp = `//tr[@class='PagerStyle']/td/table/tbody/tr/td/a[contains(@href,'Page$1')]`;
+    let firstPageCurrXp = `//tr[@class='PagerStyle']/td/table/tbody/tr/td/span[text()='1']`;
+    let firstPage;
+
+    firstPage = await page.$x(firstPageLinkXp);
+
+    if (firstPage.length > 0) {
+        await firstPage[0].click();
+    }
+    
+    await page.waitForXPath(firstPageCurrXp);    
+}
+```
 
 
 ```javascript
