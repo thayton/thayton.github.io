@@ -4,7 +4,7 @@ title: Scraping with Puppeteer
 ---
 
 In this post I'll guide you through web scraping with [Puppeteer](https://github.com/GoogleChrome/puppeteer){:target="_blank"}, a Node library used to
-control Chrome (or Chromium) using the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/){:target="_blank"}. I'll also cover how
+control Chrome (or Chromium) via the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/){:target="_blank"}. I'll also cover how
 to use Node's built-in [debugger](https://nodejs.org/api/debugger.html){:target="_blank"} so that you can step through the code to see how everything
 works.
 
@@ -45,7 +45,7 @@ For this article we'll fill out the State and Freelance Status fields. Specifica
 the State field and specify `Yes` for the Freelance Status field. This will give us a chance to see how to handle select
 dropdowns, pagination, and dynamically loaded data.
 
-## Implementation
+## Debugger
 
 Let's get started. Open up your editor and enter the following code. Save it into a file named `rid_scraper.js`.
 
@@ -205,11 +205,29 @@ debug> c
 debug> ^D
 ```
 
-Now that you've seen the basics of how to use the debugger, let's start adding the core functionality to our scraper. First, let's
-write the code to get the list of states from the State dropdown menu.
+Now that you've seen the basics of how to use the debugger, let's start adding the core functionality to our scraper.
 
-To do that we need to know what selector to use for locating the state dropdown. Open up Chrome developer tools and inspect the
-state dropdown element to see its `id` value:
+## Implementation
+
+As I stated earlier in the article, the [form](https://myaccount.rid.org/Public/Search/Member.aspx) we're scraping requires
+us to fill out at least two fields. In our code those will be the `Freelance Status` and `State` fields. Let's start
+with the `Freelance Status` first. Inspect the `Freelance Status` dropdown in Chrome developer tools to see its `id` value:
+
+```html
+<select id="FormContentPlaceHolder_Panel_freelanceDropDownList">
+    <option selected="selected" value=""></option>
+    <option value="1">Yes</option>
+    <option value="0">No</option>
+```
+
+Now that we have the `id`, we can select the `Yes` option for the Freelance Status using Puppeteer's
+[page.select](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageselectselector-values) method:
+
+```javascript
+await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
+```
+
+Next, inspect the State dropdown menu to see its `id`:
 
 ```html
 <select id="FormContentPlaceHolder_Panel_stateDropDownList">
@@ -221,9 +239,10 @@ state dropdown element to see its `id` value:
 </select>
 ```
 
-Now that we know the id, let's create a generic function that can return a list of all the options under a select element. We'll use Puppeteer's
-[page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args) function to locate the `<select>`
-element that matches `selector` and return all of the available options for that element as an array of text,value pairs.
+To retrieve all of the states, we'll first create a generic function that returns a list of all the options under a select element.
+We'll use Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args)
+function to locate the `<select>` element that matches `selector` and return all of the available options for that element as an array
+of text,value pairs.
 
 ```javascript
 async function getSelectOptions(page, selector) {
@@ -252,8 +271,9 @@ async function getStates(page) {
 }
 ```
 
-Now let's go back to `main()` and update it to iterate through the list of states. We'll also add
-code to set the Freelance Status field to `Yes`. 
+Now let's go back to `main()` and update it to iterate through the list of states and submit
+a search for each state with the the Freelance Status field to `Yes`. We'll also add in code
+to wait for the results to show up in the table.
 
 ```javascript
 async function main() {
@@ -282,13 +302,13 @@ async function main() {
 main();
 ```
 
-Here we use `page.select` to select the State and Freelance status values, `page.click` to click the Find Members
-button. After we submit the search by clicking the Find Member search button we wait until the results table appears
+Here we use `page.select` to select the State and Freelance status options.  `page.click` clicks the Find Members
+search button. After we submit the search by clicking the Find Member search button we wait until the results table appears
 using `waitForSelector`.
 
-Now run the script in the debugger, so you can step through the code a line at a time and watch as the State and
-Freelance status fields get updated as the code runs. If you'd like to examine the values of the variables as you're
-stepping through the code use the `repl` command:
+Now run `node inspect rid_scraper.js` so that you can step through the code a line at a time and see the State and
+Freelance Status fields get updated in the browser being controlled by the script. You can examine the values of the
+variables as you're stepping through the code use the `repl` command:
 
 ```bash
 debug> repl
