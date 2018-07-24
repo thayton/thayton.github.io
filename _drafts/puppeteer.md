@@ -302,8 +302,10 @@ async function main() {
 main();
 ```
 
-First we use `page.select` to select the State and Freelance Status options. Then `page.click` clicks the Find Members
-search button. After we submit the search we wait until the results table appears using `waitForSelector`.
+First we use [page.select](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageselectselector-values){:target="_blank"} to
+select the State and Freelance Status options. Then we call [page.click](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageclickselector-options){:target="_blank}
+to click on the Find Members search button. Once we've submitted the search we wait until the results table appears using
+[waitForSelector](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforselectorselector-options){:target="_blank"}.
 
 Now run `node inspect rid_scraper.js` so that you can step through the code a line at a time and see the State and
 Freelance Status fields get updated in the browser being controlled by the script. You can examine the values of the
@@ -322,7 +324,7 @@ Press Ctrl + C to leave debug repl
 > ^C
 ```
 
-Now that we've submitted the form, we'll create a `scrapeMemberTable` to collect the results from table:
+We've written the code submit the form, now let's create a `scrapeMemberTable` to collect the results from table:
 
 ```javascript
 async function scrapeMemberTable(page) {
@@ -405,9 +407,9 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
-Now that we have a way to go to the next page, we iterate through all of pages, collecting the results
-on each page as we go. Once we reach the last page, the function returns `true` to indicate that there's
-no more pages left.
+Now that we have a way to go to the next page, let's create a `scrapeAllPages` to iterate through all of pages, 
+collecting the results on each page as we go. Once we reach the last page, the function returns `true` to 
+indicate that there's no more pages left.
 
 ```javascript
 async function scrapeAllPages(page) {
@@ -469,18 +471,35 @@ async function gotoFirstPage(page) {
 }
 ```
 
+Now we have the code to iterate through all the pages of the results. However, there's an optimization we
+can make here. On the right size of the pager is a dropdown where we can select the number of results that
+show up on each page. By setting this dropdown to its maximum value (50) we can reduce the total number of
+pages (and requests to the server) that our scraper will have have to click through.
 
-```javascript
-/*
- * Wait until elem becomes detached from DOM
- */
-async function waitUntilStale(page, elem) {
-    await page.waitForFunction(
-        e => !e.ownerDocument.contains(e),
-        { polling: 'raf' }, elem
-    );
-}
+![Page Size](/assets/puppeteer/page_size.png)
+
+When you select one of the page size options in this dropdown it will dynamically update the results table. 
+That means we need to be able to determine when that update has completed. Also, if you inspect the HTML for 
+the `<select>` in Chrome Developer Tools you'll see that it does not have an `id` attribute. So we'll have to 
+locate it by searching for its `name` attribute. 
+
+```html
+<select name="ctl00$FormContentPlaceHolder$Panel$resultsGrid$ctl11$ctl06"
+   onchange="javascript:setTimeout('__doPostBack(\'ctl00$FormContentPlaceHolder$Panel$resultsGrid$ctl11$ctl06\',\'\')', 0)">
+     <option value="5">5</option>
+     <option selected="selected" value="10">10</option>
+     <option value="20">20</option>
+     <option value="50">50</option>
+</select>
 ```
+
+There's one catch here: the value for the `name` attribute is not constant. In other words, we can't just hardcode
+the `name` value in our code because it changes each time we perform a new search.
+
+Taking all of this into account, we create a `setMaxPageSize()` function that locates the name value using a
+regex to search the page source HTML which we access via [page.content](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagecontent){:target="_blank"}.
+Then we select the maximum page size from the dropdown and then wait for the old results table to detach
+from the DOM as a signal that the new results table has been dynamically loaded in place of the old one:
 
 ```javascript
 async function setMaxPageSize(page) {
@@ -508,3 +527,16 @@ async function setMaxPageSize(page) {
     await waitUntilStale(page, resultsTable);
 }
 ```
+
+```javascript
+/*
+ * Wait until elem becomes detached from DOM
+ */
+async function waitUntilStale(page, elem) {
+    await page.waitForFunction(
+        e => !e.ownerDocument.contains(e),
+        { polling: 'raf' }, elem
+    );
+}
+```
+
