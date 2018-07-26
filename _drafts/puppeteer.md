@@ -371,7 +371,7 @@ And the pattern for the current page.
 
 ![Page 2 current](/assets/puppeteer/page2_current.png)
 
-Once we click on the next page's link, we'll need to wait for it to become the current page. We do that by
+Once we click on the next page's link, we have to wait for it become the current page. We do that by
 waiting for the page number we click on to appear within a `<span>`:
 
 ```javascript
@@ -528,6 +528,9 @@ async function setMaxPageSize(page) {
 }
 ```
 
+The `waitUntilStale` function waits for the element we pass in to become detached from the DOM by passing
+in a predicate function to Puppeteer's [waitForFunction](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforfunctionpagefunction-options-args){:target="_blank"}:
+
 ```javascript
 /*
  * Wait until elem becomes detached from DOM
@@ -538,5 +541,55 @@ async function waitUntilStale(page, elem) {
         { polling: 'raf' }, elem
     );
 }
+```
+
+At this point, we have enough functionality to complete our scraper:
+
+```javascript
+    const browser = await puppeteer.launch({ headless: true, args: [ '--start-fullscreen' ] });
+    const page = await browser.newPage();
+
+    page.on('console', msg => console.log('PAGE LOG:', msg.text()));
+    
+    await page.goto(url);
+    
+    let states = await getStates(page);
+    
+    for (const [ i, state ] of states.entries()) {
+        console.log(`[${i+1}/${states.length}] Scraping data for ${state.name}`);
+        
+        await page.select('#FormContentPlaceHolder_Panel_stateDropDownList', state.value);
+        await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
+
+        /*
+         * The first time we run a search we can wait for the table to appear to determine
+         * once the search has loaded the results. However, with subsequent searches the 
+         * table already exists and what we need to determine is when the table contents have 
+         * been updated. To do that we fetch a reference to the table here and then wait for 
+         * it to become stale (detached) as an indication that the new table data has loaded.
+         */
+        let resultsTable = await page.$('table#FormContentPlaceHolder_Panel_resultsGrid');
+        
+        await page.click('#FormContentPlaceHolder_Panel_searchButtonStrip_searchButton');
+
+        if (resultsTable) {
+            await waitUntilStale(page, resultsTable);
+        } else {
+            await page.waitForSelector('#FormContentPlaceHolder_Panel_resultsGrid');
+        }
+
+        if (i === 0) {
+            await setMaxPageSize(page);
+        }
+
+        let data = await scrapeAllPages(page);
+        console.log(`Got ${data.length} records in all`);
+    }
+
+    await page.close();
+    browser.close();
+}
+
+main();
 ```
 
