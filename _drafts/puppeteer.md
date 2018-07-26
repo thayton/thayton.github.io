@@ -10,7 +10,7 @@ works.
 
 ## Dependencies
 
-In order to run Puppeteer, you'll first need to install [Node](https://nodejs.org/en/) if it's not already on your system.
+In order to run Puppeteer, you'll first need to install [Node](https://nodejs.org/en/){:target="_blank"} if it's not already on your system.
 Since the code in this article uses async/await, you'll need Node v7.6.0 or higher.
 
 ## Setup
@@ -209,7 +209,7 @@ Now that you've seen the basics of how to use the debugger, let's start adding t
 
 ## Implementation
 
-As I stated earlier, the [form](https://myaccount.rid.org/Public/Search/Member.aspx) we're scraping requires us to fill
+As I mentioned earlier, the [form](https://myaccount.rid.org/Public/Search/Member.aspx){:target="_blank"} we're scraping requires us to fill
 out at least two fields. In our code those will be the Freelance Status and State fields. Inspect the Freelance Status
 dropdown in Chrome developer tools to see its `id` value:
 
@@ -221,14 +221,14 @@ dropdown in Chrome developer tools to see its `id` value:
 ```
 
 Now that we have the `id`, we can select the `Yes` option for the Freelance Status using Puppeteer's
-[page.select](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageselectselector-values) method:
+[page.select](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageselectselector-values){:target="_blank"} method:
 
 ```javascript
 await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
 ```
 
 To retrieve all of the states, we'll first create a generic function that returns a list of the options under a select element.
-We'll use Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args)
+We'll use Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args){:target="_blank"}
 function to locate the `<select>` element that matches `selector` and return all of the available options for that element as an array
 of text,value pairs.
 
