@@ -37,11 +37,11 @@ Here's a screenshot of the form:
 
 ![Search Form](/assets/puppeteer/search_form.png)
 
-If you try to submit the form by clicking on Find Member, without filling in any of the fields, you'll see the following warning:
+If you click Find Member without filling in any of the fields, you'll get the following warning:
 
 ![Warning](/assets/puppeteer/warning.png)
 
-For this article we'll fill out the State and Freelance Status fields. Specifically, we'll iterate through all of the states in
+In our code we'll fill out the State and Freelance Status fields. Specifically, we'll iterate through all of the states in
 the State field and specify `Yes` for the Freelance Status field. This will give us a chance to see how to handle select
 dropdowns, pagination, and dynamically loaded data.
 
@@ -324,7 +324,7 @@ Press Ctrl + C to leave debug repl
 > ^C
 ```
 
-We've written the code submit the form, now let's create a `scrapeMemberTable` to collect the results from table:
+Now that we've written the code submit the form, let's create a `scrapeMemberTable` function to scrape the results:
 
 ```javascript
 async function scrapeMemberTable(page) {
@@ -353,7 +353,8 @@ async function scrapeMemberTable(page) {
 }
 ```
 
-We collect all the data in each table row using the headers as keys to create a dictionary of results.
+The `scrapeMemberTable` function collects all of the data from each table row using the table headers as keys 
+to create a dictionary of results.
 
 At this point, we're able to scrape the first page of results, but we need to be able to iterate through all
 of the pages. If you look at the pager below the results table, you'll see that subsequent pages show up as
@@ -371,8 +372,9 @@ And the pattern for the current page.
 
 ![Page 2 current](/assets/puppeteer/page2_current.png)
 
-Once we click on the next page's link, we have to wait for it become the current page. We do that by
-waiting for the page number we click on to appear within a `<span>`:
+We'll find the next page link by searching for the pattern `Page$<pagenum>`. Once we find and click on the next page's link, 
+we need to wait for that page become the current page before we try to collect the next page of results. We do that by waiting 
+for the page number we clicked on to appear within a `<span>`:
 
 ```javascript
 /*------------------------------------------------------------------------------
@@ -407,9 +409,9 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
-Now that we have a way to go to the next page, let's create a `scrapeAllPages` to iterate through all of pages, 
-collecting the results on each page as we go. Once we reach the last page, the function returns `true` to 
-indicate that there's no more pages left.
+Now that we have a way to go to the next page, we can create a `scrapeAllPages` function to iterate through 
+all of pages, collecting the results on each page as we go. Once we reach the last page, the function returns 
+`true` to indicate that there's no more pages left.
 
 ```javascript
 async function scrapeAllPages(page) {
@@ -441,8 +443,8 @@ async function scrapeAllPages(page) {
 At the end of the `scrapeAllPages` is a call to `gotoFirstPage`. This function takes us back to the first page of results.
 Why is this necessary? Because once you get to the last page and start a new search the pager does not reset.
 
-In other words, if you're on the last of the results for Alabama and then you do a search for Alaska, the laste page of
-results for Alaska will come up instead of the first page.
+In other words, if you're on the last page of results for Alabama and then you do a search for Alaska, the last page of
+results for Alaska comes up instead of the first page.
 
 In order to handle this we explicitly click the page 1 link before starting a new search:
 
@@ -471,7 +473,7 @@ async function gotoFirstPage(page) {
 }
 ```
 
-Now we have the code to iterate through all the pages of the results. However, there's an optimization we
+Now we have code that can iterate through all of the pages of results. However, there's an optimization we
 can make here. On the right size of the pager is a dropdown where we can select the number of results that
 show up on each page. By setting this dropdown to its maximum value (50) we can reduce the total number of
 pages (and requests to the server) that our scraper will have have to click through.
@@ -479,9 +481,10 @@ pages (and requests to the server) that our scraper will have have to click thro
 ![Page Size](/assets/puppeteer/page_size.png)
 
 When you select one of the page size options in this dropdown it will dynamically update the results table. 
-That means we need to be able to determine when that update has completed. Also, if you inspect the HTML for 
-the `<select>` in Chrome Developer Tools you'll see that it does not have an `id` attribute. So we'll have to 
-locate it by searching for its `name` attribute. 
+That means we need to be able to determine when that update has completed. 
+
+If you inspect the page size `<select>` in Chrome Developer Tools you'll see that it does not have an `id` 
+attribute. That means we'll have to locate it by searching for its `name` attribute instead:
 
 ```html
 <select name="ctl00$FormContentPlaceHolder$Panel$resultsGrid$ctl11$ctl06"
@@ -493,13 +496,15 @@ locate it by searching for its `name` attribute.
 </select>
 ```
 
-There's one catch here: the value for the `name` attribute is not constant. In other words, we can't just hardcode
+But there's a catch: the value for the `name` attribute is not consistant. In other words, we can't just hardcode
 the `name` value in our code because it changes each time we perform a new search.
 
 Taking all of this into account, we create a `setMaxPageSize()` function that locates the name value using a
 regex to search the page source HTML which we access via [page.content](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagecontent){:target="_blank"}.
-Then we select the maximum page size from the dropdown and then wait for the old results table to detach
-from the DOM as a signal that the new results table has been dynamically loaded in place of the old one:
+Then we select the maximum page size from the dropdown and then wait for the old results table to be updated.
+
+How do we determine when the results table has updated? By waiting until the current table detaches from the DOM.
+We'll take that as a signal that the new results table has been loaded into place:
 
 ```javascript
 async function setMaxPageSize(page) {
@@ -528,7 +533,7 @@ async function setMaxPageSize(page) {
 }
 ```
 
-The `waitUntilStale` function waits for the element we pass in to become detached from the DOM by passing
+The `waitUntilStale` function waits for an element to become detached from the DOM by passing
 in a predicate function to Puppeteer's [waitForFunction](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforfunctionpagefunction-options-args){:target="_blank"}:
 
 ```javascript
