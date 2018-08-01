@@ -227,8 +227,8 @@ Now that we have the `id`, we can select the `Yes` option for the Freelance Stat
 await page.select('#FormContentPlaceHolder_Panel_freelanceDropDownList', '1');
 ```
 
-To retrieve all of the states, we'll first create a generic function that returns a list of the options under a select element.
-We'll use Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args){:target="_blank"}
+To retrieve all of the states, we'll first create a generic function that returns the options under a select element. We'll use
+Puppeteer's [page.evaluate](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pageevaluatepagefunction-args){:target="_blank"}
 function to locate the `<select>` element that matches `selector` and return all of the available options for that element as an array
 of text,value pairs.
 
@@ -324,7 +324,7 @@ Press Ctrl + C to leave debug repl
 > ^C
 ```
 
-Now that we've written the code submit the form, let's create a `scrapeMemberTable` function to scrape the results:
+Now that we've written the code to submit the form, let's create a `scrapeMemberTable` function to scrape the results:
 
 ```javascript
 async function scrapeMemberTable(page) {
@@ -373,8 +373,8 @@ And the pattern for the current page.
 ![Page 2 current](/assets/puppeteer/page2_current.png)
 
 We'll find the next page link by searching for the pattern `Page$<pagenum>`. Once we find and click on the next page's link, 
-we'll need to wait for that page to load and become the current page before we try to collect the next page of results. We 
-can do that by waiting for the page number we click on to appear within a `<span>`:
+we'll need to wait for that page to load and become the current page before collecting the results. We can do that by 
+waiting for the page number we click on to appear within a `<span>`:
 
 ```javascript
 /*------------------------------------------------------------------------------
@@ -409,12 +409,13 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
-`gotoNextPage` uses Puppeteer's [page.$x](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagexexpression){:target="_blank"}
-method to search for the next page link. After we click the link, we call [page.waitForXPath](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforxpathxpath-options){:target="_blank"} to wait for the next page to load.
+Here we use Puppeteer's [page.$x](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagexexpression){:target="_blank"}
+method to search for the next page link. After clicking the link, we call [page.waitForXPath](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforxpathxpath-options){:target="_blank"} to wait for the page number we just clicked on to appear within a `<span>`. Once we've 
+reached the last page `gotoNextPage` will leave `noMorePages` set to `true`, to indicate to the caller that there's 
+no more pages left to click through.
 
 Now that we have a way to go to the next page, we can create a `scrapeAllPages` function to iterate through 
-all of pages, collecting the results on each page as we go. To signal when we've reached the last page, the function 
-returns `true` to indicate that there's no more pages left.
+all of pages, collecting the results on each page as we go.
 
 ```javascript
 async function scrapeAllPages(page) {
@@ -456,7 +457,7 @@ In order to handle this we explicitly click the page 1 link before starting a ne
  * Go back to the first page of results in order to reset the pager. Once the 
  * first page link is clicked and becomes the current page the page 1 link will 
  * appear inside of <span>1</span>. So we can determine once page 1 has finished
- * loading by wait inguntil page 1 appears inside of this span. 
+ * loading by waiting until page 1 appears inside of this span. 
  *
  * Note that there might not be a page 1 link because there was only one page of 
  * results. In that case the page will still show up as <span>1</span> element. 
@@ -507,7 +508,7 @@ regex to search the page source HTML which we access via [page.content](https://
 Then we select the maximum page size from the dropdown and wait for the old results table to be updated.
 
 How do we determine when the results table has updated? By waiting until the current table detaches from the DOM.
-We'll take that as the signal that the new results table has been loaded into place:
+We'll use that as the signal that the new results table has been loaded into place:
 
 ```javascript
 async function setMaxPageSize(page) {
@@ -622,6 +623,17 @@ as we iterate through each state.
 
 ## Conclusion
 
+At this point, we've covered most of the basic techniques you'll use when developing a scraper:
+
+- Loading a page and waiting for specific elements to appear
+- Scraping/collecting the results from a response page
+- Handling pagination
+- Detecting when an element has been updated dynamically by waiting for that element to become stale
+- Stepping through your code with a debugger
+
 The entire script for this article is available as a gist at:
 
 [https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a](https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a){:target="_blank"}
+
+## Shameless Plug
+Have a scraping project you’d like done? I’m available for hire. Contact me for a free quote.
