@@ -487,7 +487,7 @@ When you select one of the page size options in this dropdown it will dynamicall
 That means we need to be able to determine when that update has completed. 
 
 If you inspect the page size `<select>` in Chrome Developer Tools you'll see that it does not have an `id` 
-attribute. That means we'll have to locate it by searching for its `name` attribute instead:
+attribute. We'll have to locate it by searching for its `name` attribute instead:
 
 ```html
 <select name="ctl00$FormContentPlaceHolder$Panel$resultsGrid$ctl11$ctl06"
@@ -630,6 +630,6 @@ At this point, we've covered most of the basic techniques you'll use when develo
 - Detecting when an element has been updated dynamically by waiting for that element to become stale
 - Stepping through your code with a debugger
 
-The entire script for this article is available as a gist at:
+The code developed in this article is available as a gist at:
 
 [https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a](https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a){:target="_blank"}
