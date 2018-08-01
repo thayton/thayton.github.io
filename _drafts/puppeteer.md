@@ -59,7 +59,7 @@ async function main() {
 
     await page.goto(url);
     console.log(await page.title());
-    browser.close();    
+    await browser.close();    
 }
 
 main();
@@ -127,7 +127,7 @@ debug> sb(5)
   7 
   8     await page.goto(url);
   9     console.log(await page.title());
- 10     browser.close();
+ 10     await browser.close();
 ```
 
 Type `list` again you'll notice that there's now a `*` symbol on line 5. The debugger is giving us a
@@ -166,13 +166,13 @@ break in rid_scraper.js:8
   7 
 > 8     await page.goto(url);
   9     console.log(await page.title());
- 10     browser.close();    
+ 10     await browser.close();    
 debug> n
 break in rid_scraper.js:9
   7 
   8     await page.goto(url);
 > 9     console.log(await page.title());
- 10     browser.close();    
+ 10     await browser.close();    
  11 }
 ```
 
@@ -185,14 +185,14 @@ break in rid_scraper.js:9
   7 
   8     await page.goto(url);
 > 9     console.log(await page.title());
- 10     browser.close();    
+ 10     await browser.close();    
  11 }
 debug> n
 < Find an RID Member
 break in rid_scraper.js:10
   8     await page.goto(url);
   9     console.log(await page.title());
->10     browser.close();    
+>10     await browser.close();    
  11 }
  12
 ```
@@ -296,7 +296,7 @@ async function main() {
         break;
     }
     
-    browser.close();
+    await browser.close();
 }
 
 main();
@@ -551,7 +551,8 @@ async function waitUntilStale(page, elem) {
 At this point, we have enough functionality to complete our scraper:
 
 ```javascript
-    const browser = await puppeteer.launch({ headless: true, args: [ '--start-fullscreen' ] });
+async function main() {
+    const browser = await puppeteer.launch({ slowMo: 250 });
     const page = await browser.newPage();
 
     page.on('console', msg => console.log('PAGE LOG:', msg.text()));
@@ -583,18 +584,41 @@ At this point, we have enough functionality to complete our scraper:
             await page.waitForSelector('#FormContentPlaceHolder_Panel_resultsGrid');
         }
 
+        /*
+         * The page size is retained after the first time its set, so we only
+         * need to call this once
+         */
         if (i === 0) {
             await setMaxPageSize(page);
         }
 
         let data = await scrapeAllPages(page);
-        console.log(`Got ${data.length} records in all`);
+        
+        console.log(`Got ${data.length} records for state ${state.name}`);
+        console.log(JSON.stringify(data, null, 2));
+
+        /* Only grab the first three states for demo purposes */
+        if (i >= 2) {
+            break;
+        }
     }
 
     await page.close();
-    browser.close();
+    await browser.close();
 }
 
 main();
 ```
 
+The browser is launched with the [slowMo](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#puppeteerlaunchoptions){:target="_blank"} option 
+set to 250ms. This makes it easier to watch the script progress and also ensures that we don't hit the site too quickly. I've also limited the script to the 
+first three states. 
+
+As was done in the `setMaxPageSize()` function, in `main()` we wait for the results table to become stale on subsequent searches to determine when new results 
+are loaded.
+
+## Conclusion
+
+The entire script for this article is available as a gist at:
+
+[https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a](https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a){:target="_blank"}
