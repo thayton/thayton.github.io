@@ -373,8 +373,8 @@ And the pattern for the current page.
 ![Page 2 current](/assets/puppeteer/page2_current.png)
 
 We'll find the next page link by searching for the pattern `Page$<pagenum>`. Once we find and click on the next page's link, 
-we need to wait for that page become the current page before we try to collect the next page of results. We do that by waiting 
-for the page number we clicked on to appear within a `<span>`:
+we'll need to wait for that page to load and become the current page before we try to collect the next page of results. We 
+can do that by waiting for the page number we click on to appear within a `<span>`:
 
 ```javascript
 /*------------------------------------------------------------------------------
@@ -409,9 +409,12 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
+`gotoNextPage` uses Puppeteer's [page.$x](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagexexpression){:target="_blank"}
+method to search for the next page link. After we click the link, we call [page.waitForXPath](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforxpathxpath-options){:target="_blank"} to wait for the next page to load.
+
 Now that we have a way to go to the next page, we can create a `scrapeAllPages` function to iterate through 
-all of pages, collecting the results on each page as we go. Once we reach the last page, the function returns 
-`true` to indicate that there's no more pages left.
+all of pages, collecting the results on each page as we go. To signal when we've reached the last page, the function 
+returns `true` to indicate that there's no more pages left.
 
 ```javascript
 async function scrapeAllPages(page) {
@@ -501,10 +504,10 @@ the `name` value in our code because it changes each time we perform a new searc
 
 Taking all of this into account, we create a `setMaxPageSize()` function that locates the name value using a
 regex to search the page source HTML which we access via [page.content](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagecontent){:target="_blank"}.
-Then we select the maximum page size from the dropdown and then wait for the old results table to be updated.
+Then we select the maximum page size from the dropdown and wait for the old results table to be updated.
 
 How do we determine when the results table has updated? By waiting until the current table detaches from the DOM.
-We'll take that as a signal that the new results table has been loaded into place:
+We'll take that as the signal that the new results table has been loaded into place:
 
 ```javascript
 async function setMaxPageSize(page) {
@@ -614,8 +617,8 @@ The browser is launched with the [slowMo](https://github.com/GoogleChrome/puppet
 set to 250ms. This makes it easier to watch the script progress and also ensures that we don't hit the site too quickly. I've also limited the script to the 
 first three states. 
 
-As was done in the `setMaxPageSize()` function, in `main()` we wait for the results table to become stale on subsequent searches to determine when new results 
-are loaded.
+As was done in the `setMaxPageSize()` function, we wait for the results table to become stale on subsequent searches to determine when new results are loaded
+as we iterate through each state.
 
 ## Conclusion
 
