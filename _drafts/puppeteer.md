@@ -5,8 +5,7 @@ title: Scraping with Puppeteer
 
 In this post I'll guide you through web scraping with [Puppeteer](https://github.com/GoogleChrome/puppeteer){:target="_blank"}, a Node library used to
 control Chrome (or Chromium) via the [DevTools Protocol](https://chromedevtools.github.io/devtools-protocol/){:target="_blank"}. I'll also cover how
-to use Node's built-in [debugger](https://nodejs.org/api/debugger.html){:target="_blank"} so that you can step through the code to see how everything
-works.
+to use Node's built-in [debugger](https://nodejs.org/api/debugger.html){:target="_blank"} so that you can step through the code to see how it works.
 
 ## Dependencies
 
@@ -309,7 +308,7 @@ to click on the Find Members search button. Once we've submitted the search we w
 
 Now run `node inspect rid_scraper.js` so that you can step through the code a line at a time and see the State and
 Freelance Status fields get updated in the browser being controlled by the script. You can examine the values of the
-variables as you're stepping through the code use the `repl` command:
+variables as you're stepping through the code via the `repl` command:
 
 ```bash
 debug> repl
@@ -634,6 +633,3 @@ At this point, we've covered most of the basic techniques you'll use when develo
 The entire script for this article is available as a gist at:
 
 [https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a](https://gist.github.com/thayton/3185339aa43b6bb49ddafc611102e90a){:target="_blank"}
-
-## Shameless Plug
-Have a scraping project you’d like done? I’m available for hire. Contact me for a free quote.
