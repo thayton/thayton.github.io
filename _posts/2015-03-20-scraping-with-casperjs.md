@@ -35,10 +35,11 @@ attribute is set to `jobs`. That means the table can be identified with the CSS 
 We'll wait for this table to be rendered before we start scraping jobs.
 
 In the following listing, we create a Casper instance and have it open the jobs page. Then we wait for the jobs table to load by 
-monitoring the contents of the `span#currentPageInfo` that displays the total number of jobs in the results. It will be something like
-`Job Openings 1 - 25 of 1106`. Here we use `waitFor()` to wait until the text within that span matches the pattern `\d+ - \d+ of \d+`.
-Once the table has loaded, we call `processPage()`. If the table does not load before the default timeout occurs, the script exits
-by calling `terminate()`.
+monitoring the contents of the `<span>` with id `currentPageInfo`. Once the jobs are loaded, the text within this span will get
+updated to show the total number of jobs in the results. It will be something like `Job Openings 1 - 25 of 1106`.
+
+We use `waitFor()` to wait until the text within that span matches the pattern `\d+ - \d+ of \d+`. Once the table has loaded, we
+call `processPage()`. If the table does not load before the default timeout occurs, the script exits by calling `terminate()`.
 
 ```javascript
 /**
