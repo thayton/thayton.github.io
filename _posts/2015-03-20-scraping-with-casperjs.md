@@ -3,6 +3,9 @@ layout: post
 title: Scraping with CasperJS
 ---
 
+UPDATE 09/27/2018 - The site changed after this article was originally written. I've updated the code that waits for
+the jobs to load, along with the description in this article.
+
 In a [previous post]({% post_url 2015-02-03-scraping-with-python-selenium-and-phantomjs %}), I showed how to scrape
 a Javascript-heavy site by using the [Selenium](http://selenium-python.readthedocs.org/) bindings for Python to drive a headless 
 browser ([PhantomJS](http://phantomjs.org/)). In this post, I'll show how to scrape the same site using [CasperJS](http://casperjs.org/).
@@ -32,8 +35,10 @@ attribute is set to `jobs`. That means the table can be identified with the CSS 
 We'll wait for this table to be rendered before we start scraping jobs.
 
 In the following listing, we create a Casper instance and have it open the jobs page. Then we wait for the jobs table to load by 
-calling `waitForSelector()`. Once the table has loaded, we call `processPage()`. If the table does not load before the default 
-timeout occurs, the script exits by calling `terminate()`.
+monitoring the contents of the `span#currentPageInfo` that displays the total number of jobs in the results. It will be something like
+`Job Openings 1 - 25 of 1106`. Here we use `waitFor()` to wait until the text within that span matches the pattern `\d+ - \d+ of \d+`.
+Once the table has loaded, we call `processPage()`. If the table does not load before the default timeout occurs, the script exits
+by calling `terminate()`.
 
 ```javascript
 /**
@@ -57,7 +62,12 @@ var terminate = function() {
 };
 
 casper.start(url);
-casper.waitForSelector('table#jobs', processPage, terminate);
+
+/* Wait for 'Job Openings 1 - 25 of 1105' to appear within span */        
+casper.waitFor(function() {
+    return /\d+ - \d+ of \d+/.test(this.fetchText('span#currentPageInfo'));
+}, processPage, terminate, 5000);
+
 casper.run();
 ```
 
