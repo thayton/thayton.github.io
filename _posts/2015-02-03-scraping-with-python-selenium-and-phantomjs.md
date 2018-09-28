@@ -3,6 +3,9 @@ layout: post
 title: Scraping with Python Selenium and PhantomJS
 ---
 
+UPDATE 09/27/2018 - The site changed after this article was originally written. I've updated the code that waits for
+the jobs to load, along with the description in this article.
+
 In previous posts, I covered scraping using mechanize as the browser. Sometimes though 
 a site uses so much Javascript to dynamically render its pages that using a tool like 
 mechanize (which can't handle Javascript) isn't really feasable. For these cases, we have
@@ -39,10 +42,9 @@ Let's get started.
 
 ## Implementation
 
-First, let's sketch out our class, `TaleoJobScraper`. In the constructor
-we'll instantiate a webdriver for PhantomJS. Our main method will be `scrape()`. It will call
-`scrape_job_links()` to iterate through the job listings, and then call `driver.quit()` once
-it's complete.
+First, let's sketch out our class, `TaleoJobScraper`. In the constructor we'll instantiate a webdriver
+for PhantomJS. Our main method will be `scrape()`. It will call `scrape_job_links()` to iterate through
+the job listings, and then call `driver.quit()` once it's complete.
 
 ```python
 #!/usr/bin/env python
@@ -50,6 +52,7 @@ it's complete.
 import re, urlparse
 
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
 from bs4 import BeautifulSoup
 from time import sleep
 
@@ -59,7 +62,8 @@ class TaleoJobScraper(object):
     def __init__(self):
         self.driver = webdriver.PhantomJS()
         self.driver.set_window_size(1120, 550)
-
+        self.wait = WebDriverWait(self.driver, 10)
+        
     def scrape(self):
         jobs = self.scrape_job_links()
         for job in jobs:
@@ -72,12 +76,19 @@ if __name__ == '__main__':
     scraper.scrape()
 ```
 
-Now let's take a look at the `scrape_job_links()` method, which is listed 
-next:
+Now let's take a look at the `scrape_job_links()` method, which is listed next:
 
 ```python
 def scrape_job_links(self):
     self.driver.get(link)
+
+    r = re.compile(r'\d+ - \d+ of \d+')
+    f = lambda d: re.search(r, d.find_element_by_id('currentPageInfo').text)
+
+    self.wait.until(f)
+
+    m = f(self.driver)
+    t = m.group(0)
 
     jobs = []
     pageno = 2
@@ -101,6 +112,13 @@ def scrape_job_links(self):
 
         if next_page_link:
             next_page_elem.click()
+
+            # Watch for the transition from "1 - 25 of 1106" to "26 - 50 of 1106"
+            self.wait.until(lambda d: f(d) and f(d).group(0) != t)
+
+            m = f(self.driver)
+            t = m.group(0)
+
             pageno += 1
             sleep(.75)
         else:
@@ -109,9 +127,12 @@ def scrape_job_links(self):
     return jobs
 ```
 
-First, we open the page with `driver.get()`. After `get()` returns, we feed the rendered HTML in
-`driver.page_source` into BeautifulSoup. Then we match against the `href` attribute of the 
-job links. For each job link we extract the title, url, and location.
+First, we open the page with `driver.get()`. We wait for the jobs to load by monitoring the contents of the `span`
+with id `currentPageInfo`. Once the jobs are loaded, the text within this span will get updated to show the total
+number of jobs in the results. The text that appears will be something like `Job Openings 1 - 25 of 1106`.
+
+Once the jobs are loaded, we feed the rendered HTML in `driver.page_source` into BeautifulSoup. Then we match against
+the `href` attribute of the job links. For each job link we extract the title, url, and location.
 
 To get all of the jobs, we also need to handle pagination. There's a pager at the bottom of the 
 jobs listings. Below is a screenshot of the pager. A user can click a page number or the `Next` 
@@ -123,12 +144,23 @@ We use the `Next` link to iterate through every page of the results by first fin
 using the driver's [find\_element\_by\_id](http://selenium-python.readthedocs.org/en/latest/locating-elements.html) 
 method and then calling `click()` if we're not on the last page.
 
+After clicking the next page link, we wait until the next page of jobs loads by waiting for the text
+contents of the `span#currentPageInfo` element to change. The text will get updated from something like
+`Job Openings 1 - 25 of 11021` to `Job Openings 26 - 50 of 1102`:
+
 ```python
 next_page_elem = self.driver.find_element_by_id('next')
 next_page_link = s.find('a', text='%d' % pageno)
 
 if next_page_link:
     next_page_elem.click()
+
+    # Watch for the transition from "1 - 25 of 1106" to "26 - 50 of 1106"
+    self.wait.until(lambda d: f(d) and f(d).group(0) != t)
+
+    m = f(self.driver)
+    t = m.group(0)
+
     pageno += 1
 else:
     break
