@@ -4,7 +4,7 @@ title: Revisiting Taleo with Puppeteer
 ---
 
 I've demonstrated how to scrape Taleo sites in a couple of my previous posts [[1]][casperjs] [[2]][phantomjs].
-In those articles I used the CasperJS and then later Python/Selenium to scrape the Taleo job site at [https://l3com.taleo.net](https://l3com.taleo.net/careersection/l3\_ext\_us/jobsearch.ftl){:target="blank"}. In this post, I'll show how to scrape that same site again, this time using Puppeteer.
+In those articles I used the CasperJS and Python/Selenium to scrape the Taleo job site at [https://l3com.taleo.net](https://l3com.taleo.net/careersection/l3\_ext\_us/jobsearch.ftl){:target="blank"}. In this post, I'll show how to scrape that same site again, this time using Puppeteer.
 
 [casperjs]: {% post_url 2015-03-20-scraping-with-casperjs %}
 [phantomjs]: {% post_url 2015-02-03-scraping-with-python-selenium-and-phantomjs %}
@@ -16,7 +16,7 @@ const puppeteer = require('puppeteer');
 const url = 'https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl';
 ```
 
-The main logic of the scraper goes into `async` function `main`. 
+The main logic of the scraper will go into function `main`. 
 
 ```javascript
 async function main() {
@@ -56,10 +56,10 @@ Inside `main` we first launch Chrome via Puppeteer and then load the Taleo site 
 ```
 
 Now, before we start scraping the jobs we have to wait until they'e finished loading. If you
-inspect the network and HTML you'll see that the jobs are being loaded into a table with ID
-`jobs` via an AJAX call. We need a way to determine once the jobs have been loaded and rendered.
+inspect the network and HTML you'll see that the jobs are being loaded into element `table#jobs`
+via an AJAX call. We need a way to determine once that loading has completed.
 
-If you open up the site in your browser , you'll see a spinning progress indicator appears while
+If you open up the site in your browser, you'll see a spinning progress indicator appears while
 the jobs are being loaded and then disappears once the jobs get rendered. One approach we could
 take is to wait for that 'loading' progress indicator to appear and then wait for it to go away. 
 
@@ -77,23 +77,41 @@ So we can determine when the progress indicator is visible and when it has gone 
 that element's `offsetWidth`:
 
 ```javascript
+async function waitForJobsToLoad(page) {    
     await page.waitFor(() => document.querySelector('div#progressIndicator').offsetWidth !== 0);    
     await page.waitFor(() => document.querySelector('div#progressIndicator').offsetWidth === 0);
-```
-
-Using this appreach works but I don't think it's robust as it relies on the timing working out in
-our favor. If the jobs have already loaded by the time the first `waitFor` is called, we'll end up
-timing out waiting for the progress indicator to appear.
-
-In this case it's better to wait for the contents of the `span#reloadMessage` to change. This element
-is where the message `Job Openings 1 - 25 of 1051` appears once the jobs are loaded into the table.
-
-```javascript
-async function waitForJobsToLoad(page) {    
-    await page.waitForFunction(() => document.querySelector('span#reloadMessage').innerText !== '');
 }
 ```
 
+Using this approach worked when I tested it, but I don't think it's robust as it relies on the timing
+working out in our favor. If the jobs have already loaded by the time the first `waitFor` is called,
+we'll end up timing out waiting for the progress indicator to appear.
+
+In this case it's better to wait for the contents of the `span#reloadMessage` to change. This element
+is where the message describing how many jobs were loaded appears. Initially the contents of the element
+are an empty string but after the jobs have loaded it will be something like `Job Openings 1 - 25 of 1051`:
+
+```javascript
+var waitForJobsToLoad = (function () {
+    let reloadMessage = '';
+    
+    return async function(page) {
+        await page.waitForFunction(
+            oldText => document.querySelector('span#reloadMessage').innerText !== oldText,
+            {}, reloadMessage
+        );
+        reloadMessage = await page.$eval('span#reloadMessage', e => e.innerText);
+    };
+})();
+```
+
+I've used an IIFE for `waitForJobsToLoad` so that we can determine whenever the contents in the `span#reloadMessage`
+element change. When we first open the jobs page, the contents of the `span#reloadMessage` element will be empty so,
+which is my `reloadMessage` starts out as the empty string. As you'll see though, each time we click on the next
+page the reloadMessage gets updated and that's how'll we'll monitor when the next page of jobs has finished loading:
+
+Back in `main`, once the jobs have finished loading we scrape the jobs on the current page and then
+click onto the next page, continuing until we've reached the last page.
 
 ```javascript
     let pageno = 2;
@@ -111,8 +129,40 @@ async function waitForJobsToLoad(page) {
     }
 ```
 
-In order to wait for the jobs to load, we could wait for the jobs loading indicator to
-appear and then wait for it to go away. This is the circular visual indicator we see when
+The `getJobs` function is where we scrape the job attributes:
+
+```javascript
+async function getJobs(page) {
+    const jobs = await page.evaluate(jobSelector => {
+        //debugger;
+        var results = [];
+        
+        Array.from(document.querySelectorAll(jobSelector)).forEach((tr) => {
+            th = tr.querySelector('th');
+            td = tr.querySelectorAll('td');
+            
+            results.push({
+                'title': th.innerText.trim(),
+                'href': th.querySelector('a').href,
+                'location': td[1].innerText.trim(),
+                'postingDate': td[2].innerText.trim()
+            });
+        });
+
+        return results;
+    }, 'table#jobs tr[id^="job"]');
+
+    return jobs;    
+}
+```
+
+The `debugger` statement is commented out. But if you uncomment it and launch Chrome with
+`headless` set to false and `devtools` set to `true`, then you can use Chrome's debugger
+to step through the code in `getJobs` once execution reaches the `debugger` statement:
+
+```javascript
+    const browser = await puppeteer.launch({ headless: false, devtools: true });
+```
 
 
 ```javascript
@@ -164,27 +214,3 @@ async function gotoNextPage(page, pageno) {
 }
 ```
 
-```javascript
-async function getJobs(page) {
-    const jobs = await page.evaluate(jobSelector => {
-        //debugger;
-        var results = [];
-        
-        Array.from(document.querySelectorAll(jobSelector)).forEach((tr) => {
-            th = tr.querySelector('th');
-            td = tr.querySelectorAll('td');
-            
-            results.push({
-                'title': th.innerText.trim(),
-                'href': th.querySelector('a').href,
-                'location': td[1].innerText.trim(),
-                'postingDate': td[2].innerText.trim()
-            });
-        });
-
-        return results;
-    }, 'table#jobs tr[id^="job"]');
-
-    return jobs;    
-}
-```
