@@ -30,7 +30,8 @@ async function main() {
     
     while (true) {
         const jobs = await getJobs(page);
-
+        jobs.forEach(j => console.log( JSON.stringify(j, null, 2) ));
+        
         const noMorePages = await gotoNextPage(page, pageno++);
         if (noMorePages) {
             break;
@@ -145,7 +146,8 @@ click onto the next page, continuing until we've reached the last page.
     
     while (true) {
         const jobs = await getJobs(page);
-
+        jobs.forEach(j => console.log( JSON.stringify(j, null, 2) ));
+        
         const noMorePages = await gotoNextPage(page, pageno++);
         if (noMorePages) {
             break;
@@ -188,4 +190,7 @@ to step through the code in `getJobs` once execution reaches the `debugger` stat
     const browser = await puppeteer.launch({ headless: false, devtools: true });
 ```
 
+And that's it! The complete code is available as a gist at:
+
+[https://gist.github.com/thayton/330951c308bd525fc2abea49793d583c](https://gist.github.com/thayton/330951c308bd525fc2abea49793d583c){:target="_blank"}
 
