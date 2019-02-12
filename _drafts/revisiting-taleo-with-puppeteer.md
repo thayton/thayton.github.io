@@ -16,7 +16,7 @@ const puppeteer = require('puppeteer');
 const url = 'https://l3com.taleo.net/careersection/l3_ext_us/jobsearch.ftl';
 ```
 
-The main logic of the scraper will go into function `main`. 
+The main logic of the scraper is in `main`. 
 
 ```javascript
 async function main() {
@@ -35,9 +35,6 @@ async function main() {
         if (noMorePages) {
             break;
         }
-
-        /* Don't hit the server too quickly... */
-        await page.waitFor(1000);
     }
     
     await browser.close();
@@ -88,8 +85,8 @@ working out in our favor. If the jobs have already loaded by the time the first 
 we'll end up timing out waiting for the progress indicator to appear.
 
 In this case it's better to wait for the contents of the `span#reloadMessage` to change. This element
-is where the message describing how many jobs were loaded appears. Initially the contents of the element
-are an empty string but after the jobs have loaded it will be something like `Job Openings 1 - 25 of 1051`:
+is where the message describing how many jobs were loaded appears. Initially there's no message until
+the jobs have loaded and then it will contain a string like like `Job Openings 1 - 25 of 1051`:
 
 ```javascript
 var waitForJobsToLoad = (function () {
@@ -105,10 +102,40 @@ var waitForJobsToLoad = (function () {
 })();
 ```
 
-I've used an IIFE for `waitForJobsToLoad` so that we can determine whenever the contents in the `span#reloadMessage`
-element change. When we first open the jobs page, the contents of the `span#reloadMessage` element will be empty so,
-which is my `reloadMessage` starts out as the empty string. As you'll see though, each time we click on the next
-page the reloadMessage gets updated and that's how'll we'll monitor when the next page of jobs has finished loading:
+I've used an IIFE for `waitForJobsToLoad` so that we can track the string in the `span#reloadMessage` element using the
+`reloadMessage` variable.
+
+When we first open the jobs page, the message in the `span#reloadMessage` element will be empty so `reloadMessage` starts
+out as an empty string. At the end of the function call `reloadMessage` gets set to the new value of the `span#reloadMessage`
+element. So each time `waitForJobsToLoad` gets called it waits for the message to change from whatever value it had previously.
+
+Writing it this way means we can reuse the function in the next page handler to determine once a new page of results has
+finished loading:
+
+```javascript
+/*------------------------------------------------------------------------------
+ * Look for link for pageno in pager. So if pageno was 6 we'd look for 'Page$6' 
+ * in href:
+ *
+ * <a href="#" title="Go to page 6" aria-disabled="false">6</a>
+ */ 
+async function gotoNextPage(page, pageno) {
+    let noMorePages = true;
+    let nextPageXp = `//ul[@class='pager']/li[@class='pagerlink']/a[text()='${pageno}']`;    
+    let nextPage;
+
+    nextPage = await page.$x(nextPageXp)
+    
+    if (nextPage.length > 0) {
+        await nextPage[0].click();
+        await waitForJobsToLoad(page);
+        
+        noMorePages = false;
+    }
+
+    return noMorePages;    
+}
+```
 
 Back in `main`, once the jobs have finished loading we scrape the jobs on the current page and then
 click onto the next page, continuing until we've reached the last page.
@@ -123,9 +150,6 @@ click onto the next page, continuing until we've reached the last page.
         if (noMorePages) {
             break;
         }
-
-        /* Don't hit the server too quickly... */
-        await page.waitFor(1000);
     }
 ```
 
@@ -164,53 +188,4 @@ to step through the code in `getJobs` once execution reaches the `debugger` stat
     const browser = await puppeteer.launch({ headless: false, devtools: true });
 ```
 
-
-```javascript
-/*------------------------------------------------------------------------------
- * Look for link for pageno in pager. So if pageno was 6 we'd look for 'Page$6' 
- * in href:
- *
- * <a href="#" title="Go to page 6" aria-disabled="false">6</a>
- *
- * After the next page link gets clicked and the new page is loaded the pager
- * will show the current page within a span (not as a link). So we wait until 
- * pageno appears within a span to indicate that the next page has finished 
- * loading.
- */ 
-async function gotoNextPage(page, pageno) {
-    let noMorePages = true;
-    let nextPageXp = `//ul[@class='pager']/li[@class='pagerlink']/a[text()='${pageno}']`;    
-    let currPageXp = `//ul[@class='pager']/li[@class='navigation-link-disabled']/a[text()='${pageno}']`;
-    let nextPage;
-
-    nextPage = await page.$x(nextPageXp)
-    
-    if (nextPage.length > 0) {
-        const reloadMessage = await page.$eval('span#reloadMessage', e => e.innerText);
-        
-        console.log(`Going to page ${pageno}`);
-
-        await nextPage[0].click();
-        await page.waitForXPath(currPageXp);
-
-        /* 
-         * The text inside the reload message span will change once the next
-         * page of jobs have been loaded:
-         *
-         *   "The list of jobs has reloaded. 1 – 25 of 1107. Page 1"
-         *
-         * So we can wait for the span's text to change in order to verify the 
-         * next page of jobs have been loaded into the jobs table
-         */
-        await page.waitForFunction(
-            oldText => oldText !== document.querySelector('span#reloadMessage').innerText,
-            {}, reloadMessage
-        );
-        
-        noMorePages = false;
-    }
-
-    return noMorePages;    
-}
-```
 
