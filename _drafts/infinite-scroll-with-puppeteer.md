@@ -65,7 +65,7 @@ main().then((jobs) => {
 });
 ```
 
-Breaking this down, within `main`, we first launch Chrome and create a new page.
+Starting from the top, we first launch Chrome and create a new page.
 
 ```javascript
     const browser = await puppeteer.launch();    
@@ -128,7 +128,7 @@ The jobs get loaded into a span with ID
 wd-FacetedSearchResultList-facetSearchResultList.newFacetSearch.Report_Entry
 ```
 
-so we pass that ID as an argument to [waitFor](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforselectororfunctionortimeout-options-args){:target_="_blank"}. Note that we escape the periods `.` in the ID in the call to `waitFor` as we don't want them interpreted as class selectors by `document.querySelector`.
+so we pass that ID as an argument to [waitFor](https://github.com/GoogleChrome/puppeteer/blob/master/docs/api.md#pagewaitforselectororfunctionortimeout-options-args){:target_="_blank"}. Note that we escape the periods `.` in the ID in the call to `waitFor`. We do this because we don't want the periods interpreted as class selectors by `document.querySelector`.
 
 Once the first page of jobs have loaded we call `scrollToEnd` to repeatedly scroll to the bottom of the
 page until the rest of the jobs have been loaded. 
@@ -153,8 +153,8 @@ const scrollToEnd = async (page) => {
 };
 ```
 
-The `scrollToEnd` function works by comparing the number of jobs currently listed with the number of
-jobs the page says it contains in all. In the screenshot below we see the **112 Results** heading. 
+The `scrollToEnd` function works by comparing the number of jobs we're able to scrape with the total number
+of jobs the system says it contains. For example, in the screenshot below we see the **112 Results** heading. 
 
 ![Total Number Jobs](/assets/infinite-scroll-with-puppeteer/total-num-jobs.png)
 
@@ -174,6 +174,9 @@ const getTotalNumJobs = async (page) => {
 };
 ```
 
+So if the page currently lists only 20 jobs, but the system says that there are 120 available, we know that we
+need to scroll down some more to load the additional jobs.
+
 We retrieve the number of jobs loaded so far using `getNumJobsListed`:
 
 ```javascript
@@ -183,8 +186,8 @@ const getNumJobsListed = () => {
 };
 ```
 
-If the number jobs listed is still less than the total number of jobs the system says it
-contains then we scroll to the bottom of the page to trigger another load:
+While the number jobs listed is less than the total number of jobs the system says it
+contains, we'll keep scrolling to the bottom of the page to trigger another load:
 
 ```javascript
     ...
