@@ -27,6 +27,13 @@ with the following parameters and form data:
 
 ![1](/assets/eygbl/1.png)
 
+We also need to pay attention to the request headers:
+
+![4](/assets/eygbl/4.png)
+
+The `tss-token` header is required when we send our request. Without it we'll get back a 403 Invalid Access response from the
+server.
+
 The response sent back is a JSON string with the following fields:
 
 ```json
@@ -47,9 +54,9 @@ with the following query string parameters
 
 ![3](/assets/eygbl/3.png)
 
-We'll see where the rest of the parameters come from later in the article when we dig into how the reqeust
-is generated. The response for this request is where our jobs will be. Within the `Result` field of the JSON
-string returned is the HTML for the jobs that we'll scrape in our code.
+We'll see where the rest of the parameters come from later in the article when we dig into how the request
+is generated. The response for this request contains the HTML for the jobs that we'll scrape within the
+`Result` field of the JSON string returned:
 
 ```json
 {
@@ -60,9 +67,9 @@ string returned is the HTML for the jobs that we'll scrape in our code.
 
 ## Implementation
 
-In this section we'll dig into the site code to see how the two XHR requests are being made so that we can
-duplicate them in our scraper. First, let's create a base class and some skeleton code for our SelectMinds
-scraper:
+Now that we've had an overview of the requests, let's get into the implementation. In this section we'll dig
+nto the site code to see how the two XHR requests are being made so that we can duplicate them in our scraper.
+First, let's create a base class and some skeleton code for our SelectMinds scraper:
 
 ```python
 import re
@@ -87,12 +94,12 @@ class SelectMindsJobScraper(object):
         self.session = requests.Session()
 ```
 
-Now let's take a look at the first XHR request again. In the Chrome developer tools, search for the URL used in the
+Let's take a look at the first XHR request again. In the Chrome developer tools, search for the URL used in the
 first POST request:
 
 ![1st_request_search](/assets/eygbl/1st_request_search.png)
 
-Click on the search result to open up the code in the sources tab. As you can see from the sources, the first XHR request
+Click on the search result to open up the code in the sources tab. The Sources tab will show that the first XHR request
 is implemented by the code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js) which
 gets triggered when the Search button is clicked:
 
@@ -118,8 +125,87 @@ j$('#jSearchSubmit', search_banner).click(function() {
 });
 ```
 
-As shown in the code above, the `JobSearch` value from the response is passed as the argument to `loadSearchResults` which
-is defined in [job_list.js](https://eygbl.referrals.selectminds.com/job_list.js):
+
+The URL is genereated by the call to `TVAPP.guid()`, which is where the `uid: 219` parameter comes from. To find the source code
+for this method, go into the console of the Chrome developer tools and type in `TVAPP.guid`. The console will display the beginning
+of the code for this method. Click on that code and it will take you into the Sources tab. The Sources tab shows that the
+`guid` method is defined in [desktop.js](https://eygbl.referrals.selectminds.com/desktop.js):
+
+```javascript
+TVAPP.guid = function(url) {
+  var date = new Date
+  var uid = date.getMilliseconds();
+
+  var additionType = "?uid=";
+
+  for (var i = 0; i < url.length; i++) {
+    if(url.charAt(i) == '?') {
+      additionType = "&uid="
+    }
+  }
+
+  var newURL = url + additionType + uid;
+
+  return newURL;
+};
+```
+
+We've covered how the `uid` parameter is genereated. Next we need to get the `tss-token` value required in the request headers.
+If you examine the HTML of the search form, you'll see an input element for the token value:
+
+```html
+<input type="hidden" name="tsstoken" id="tsstoken" value="BNT9gPAZNV24BgVMcEkM33SLoUFrFoB12tqN1g35hJg=">
+```
+
+We've seen enough at this point to implement the first request in our scraper:
+
+```python
+    def guid(self):
+        dt = datetime.now()
+        guid = dt.microsecond / 1000
+        return guid
+
+    def get_tss_token(self, soup):
+        i = soup.find('input', id='tsstoken')
+        tss_token = i['value']
+
+        return tss_token
+
+    def get_job_search_id(self, tss_token):
+        headers = {
+            'X-Requested-With': 'XMLHttpRequest',
+            'tss-token': tss_token,
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_12_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/77.0.3865.120 Safari/537.36'
+        }
+        
+        uid = self.guid()
+        params = {
+            'uid': uid
+        }
+        
+        data = {
+            'keywords': ''
+        }
+        
+        url = urljoin(self.url, '/ajax/jobs/search/create')
+
+        resp = self.session.post(url, headers=headers, params=params, data=data)
+        data = resp.json()
+
+        return data['Result']['JobSearch.id']
+
+    def scrape(self, filter_langs=[]):
+        jobs = []
+        
+        resp = self.session.get(self.url)
+        soup = BeautifulSoup(resp.text, 'lxml')
+        
+        tss_token = self.get_tss_token(soup)
+        job_search_id = self.get_job_search_id(tss_token)
+```
+
+As shown earlier in the javascript code bound to the Search button, the `JobSearch` id value from the response is passed as the
+argument to `loadSearchResults` which is defined in [job_list.js](https://eygbl.referrals.selectminds.com/job_list.js):
 
 ```javascript
 // function to find existing or get new search results
@@ -151,29 +237,6 @@ function loadSearchResults(data) {
       }
     });
   }
-};
-```
-
-The URL is generated by the call `TVAPP.guid()`. Go into the console of the Chrome developer tools and type in `TVAPP.guid`.
-The console will display the beginning of the code for this method. If you click on that code it will take you into Sources
-tab shows that this method is defined in [desktop.js](https://eygbl.referrals.selectminds.com/desktop.js):
-
-```javascript
-TVAPP.guid = function(url) {
-  var date = new Date
-  var uid = date.getMilliseconds();
-
-  var additionType = "?uid=";
-
-  for (var i = 0; i < url.length; i++) {
-    if(url.charAt(i) == '?') {
-      additionType = "&uid="
-    }
-  }
-
-  var newURL = url + additionType + uid;
-
-  return newURL;
 };
 ```
 
