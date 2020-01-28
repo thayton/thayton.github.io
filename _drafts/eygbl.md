@@ -32,9 +32,7 @@ We also need to pay attention to the request headers:
 ![4](/assets/eygbl/4.png)
 
 The `tss-token` header is required when we send our request. Without it we'll get back a 403 Invalid Access response from the
-server.
-
-The response sent back is a JSON string with the following fields:
+server. For a successful request, the response sent back is a JSON string with the following fields:
 
 ```json
 {
@@ -46,7 +44,7 @@ The response sent back is a JSON string with the following fields:
 }
 ```
 
-The `JobSearch.id` value in the response is then used as a parameter in the second XHR request, a POST to
+The `JobSearch.id` value in the response is used as a parameter in the second XHR request we highlighted, a POST to
 
 `https://eygbl.referrals.selectminds.com/ajax/content/job_results`
 
@@ -54,8 +52,8 @@ with the following query string parameters
 
 ![3](/assets/eygbl/3.png)
 
-We'll see where the rest of the parameters come from later in the article when we dig into how the request
-is generated. The response for this request contains the HTML for the jobs that we'll scrape within the
+We'll see where the rest of the parameters come from later in the article when we dig into how this request
+gets generated. The response for this request contains the HTML for the jobs that we'll scrape within the
 `Result` field of the JSON string returned:
 
 ```json
@@ -67,9 +65,9 @@ is generated. The response for this request contains the HTML for the jobs that 
 
 ## Implementation
 
-Now that we've had an overview of the requests, let's get into the implementation. In this section we'll dig
-nto the site code to see how the two XHR requests are being made so that we can duplicate them in our scraper.
-First, let's create a base class and some skeleton code for our SelectMinds scraper:
+Now that we've seen an overview of the requests, let's get into the implementation. In this section we'll dig
+into the site's code to see how the two XHR requests are being made so that we can duplicate them in our scraper.
+First, let's create a base class and some boilerplate code for our SelectMinds scraper:
 
 ```python
 import re
@@ -94,14 +92,14 @@ class SelectMindsJobScraper(object):
         self.session = requests.Session()
 ```
 
-Let's take a look at the first XHR request again. In the Chrome developer tools, search for the URL used in the
+Now, let's go back and take a look at the first XHR request again. In the Chrome developer tools, search for the URL used in the
 first POST request:
 
 ![1st_request_search](/assets/eygbl/1st_request_search.png)
 
-Click on the search result to open up the code in the sources tab. The Sources tab will show that the first XHR request
-is implemented by the code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js) which
-gets triggered when the Search button is clicked:
+Click on the search result to open up the code in the sources tab. Inside the Sources tab will you'll see that the first
+XHR request is implemented by code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js)
+which gets triggered when the Search button is clicked:
 
 ```javascript
 // Main submit binding
@@ -125,11 +123,14 @@ j$('#jSearchSubmit', search_banner).click(function() {
 });
 ```
 
+The URL is set to the return value of the call to `TVAPP.guid('/ajax/jobs/search/create')`. This method is where the `uid: 219`
+parameter is being generated. To find the source code for this method, go into the console of the Chrome developer tools and type in
+`TVAPP.guid`. The console will display the beginning of the code for this method.
 
-The URL is genereated by the call to `TVAPP.guid()`, which is where the `uid: 219` parameter comes from. To find the source code
-for this method, go into the console of the Chrome developer tools and type in `TVAPP.guid`. The console will display the beginning
-of the code for this method. Click on that code and it will take you into the Sources tab. The Sources tab shows that the
-`guid` method is defined in [desktop.js](https://eygbl.referrals.selectminds.com/desktop.js):
+![guid_method](/assets/eygbl/5.png)
+
+Click on that code and it will take you into the Sources tab. The Sources tab shows that the `guid` method is defined in
+[desktop.js](https://eygbl.referrals.selectminds.com/desktop.js):
 
 ```javascript
 TVAPP.guid = function(url) {
@@ -150,11 +151,12 @@ TVAPP.guid = function(url) {
 };
 ```
 
-We've covered how the `uid` parameter is genereated. Next we need to get the `tss-token` value required in the request headers.
-If you examine the HTML of the search form, you'll see an input element for the token value:
+Now that we've seen how the `uid` parameter is being generated, let's see how to get the `tss-token` value required in
+the request headers. Search the HTML for "tss" inside the jobs site's main page and you'll see an `<input>` element containing
+the token value:
 
 ```html
-<input type="hidden" name="tsstoken" id="tsstoken" value="BNT9gPAZNV24BgVMcEkM33SLoUFrFoB12tqN1g35hJg=">
+<input type="hidden" name="tsstoken" id="tsstoken" value="BNT9g...">
 ```
 
 We've seen enough at this point to implement the first request in our scraper:
