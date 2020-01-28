@@ -101,6 +101,8 @@ Click on the search result to open up the code in the sources tab. Inside the So
 XHR request is implemented by code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js)
 which gets triggered when the Search button is clicked:
 
+<span id="first_request"></span>
+
 ```javascript
 // Main submit binding
 j$('#jSearchSubmit', search_banner).click(function() {
@@ -151,15 +153,17 @@ TVAPP.guid = function(url) {
 };
 ```
 
-Now that we've seen how the `uid` parameter is being generated, let's see how to get the `tss-token` value required in
-the request headers. Search the HTML for "tss" inside the jobs site's main page and you'll see an `<input>` element containing
+So, the `uid` comes from the milliseconds portion of the current local time.
+
+Now that we've seen how the `uid` parameter is being generated, let's see how to get the `tss-token` value required in the
+request headers. Search the HTML for "tss" inside the jobs site's main page and you'll see an `<input>` element containing
 the token value:
 
 ```html
 <input type="hidden" name="tsstoken" id="tsstoken" value="BNT9g...">
 ```
 
-We've seen enough at this point to implement the first request in our scraper:
+At this point, we've seen enough to implement the first request in our scraper:
 
 ```python
     def guid(self):
@@ -206,8 +210,18 @@ We've seen enough at this point to implement the first request in our scraper:
         job_search_id = self.get_job_search_id(tss_token)
 ```
 
-As shown earlier in the javascript code bound to the Search button, the `JobSearch` id value from the response is passed as the
-argument to `loadSearchResults` which is defined in [job_list.js](https://eygbl.referrals.selectminds.com/job_list.js):
+Now that we've got our `job_search_id` value from the first request, we're ready to move on and see how the second XHR request is generated.
+[As shown earlier](#first_request) in the code bound to the Search button, the job_search_id value from the response is passed as the argument
+to `loadSearchResults`:
+
+```javascript
+// Main submit binding
+j$('#jSearchSubmit', search_banner).click(function() {
+    ...
+      j$(document).trigger('loadSearchResults', {'job_search_id':job_search_id});
+```
+
+The code for `loadSearchResults` is defined in [job_list.js](https://eygbl.referrals.selectminds.com/job_list.js):
 
 ```javascript
 // function to find existing or get new search results
@@ -242,20 +256,38 @@ function loadSearchResults(data) {
 };
 ```
 
-The `TVAPP.property.site.short_name` is set on the main page. If you open the View Source on the main search page you can
-see where the TVAPP property settings are defined:
+Once again we have a call to `TVAPP.guid` generating the URL for the AJAX request:
+
+```javascript
+TVAPP.guid('/ajax/content/job_results?' + context + '&site-name=' + TVAPP.property.site.short_name + '&include_site=true'),
+```
+
+As you can see from this call, we'll need to know the values for the `context` and `site-name` parameters. The `context` variable
+is defined just above the call to `guid` and ends up containing the `JobSearch.id` and `page_index` values:
+
+```javascript
+    var context = 'JobSearch.id=' + data.job_search_id;
+    if (TVAPP.property.fb) context += '&fb=true';
+    if (campaign_id) context += '&Campaign.id=' + campaign_id + '&campaign_page=2';
+    if (data.page) context += '&page_index=' + data.page;
+```
+
+The `TVAPP.property.site.short_name` we'll need to extract from the HTML on the main page. If you open the View Source on job
+sitemain search page you can see where the TVAPP property settings are defined:
 
 ```HTML
  <script type="text/javascript">
    var TVAPP = TVAPP || {}; // There can only be ONE.
    TVAPP.property = {
-     version_num: "apptss.2019.PRD.1.1.5",
-     client_name: "EY",
-     client_base_domain: "eygbl.referrals.selectminds.com",
-     default_locale_id: "0",
-     site_name: "https://eygbl.referrals.selectminds.com",
      ...
+     site: {
+         id: "2",
+         short_name: "default909"
+     },     
+
 ```
+
+We can extract the `site_name` with a regex `short_name:\s+"([^"]+)`
 
 
 ```python
