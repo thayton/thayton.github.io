@@ -32,7 +32,7 @@ We also need to pay attention to the request headers:
 ![4](/assets/eygbl/4.png)
 
 The `tss-token` header is required when we send our request. Without it we'll get back a 403 Invalid Access response from the
-server. For a successful request, the response sent back is a JSON string with the following fields:
+server. When a valid request is made the response sent back is a JSON string with the following fields:
 
 ```json
 {
@@ -44,7 +44,7 @@ server. For a successful request, the response sent back is a JSON string with t
 }
 ```
 
-The `JobSearch.id` value in the response is used as a parameter in the second XHR request we highlighted, a POST to
+We need the `JobSearch.id` value in the response because it's used as a parameter in the second XHR request, a POST to
 
 `https://eygbl.referrals.selectminds.com/ajax/content/job_results`
 
@@ -65,9 +65,9 @@ gets generated. The response for this request contains the HTML for the jobs tha
 
 ## Implementation
 
-Now that we've seen an overview of the requests, let's get into the implementation. In this section we'll dig
-into the site's code to see how the two XHR requests are being made so that we can duplicate them in our scraper.
-First, let's create a base class and some boilerplate code for our SelectMinds scraper:
+Now that we've seen an overview of the requests, let's dig into the site's code to see how the two XHR requests
+are being generated so that we can duplicate them in our scraper. First, let's create a base class and some boilerplate
+code for our SelectMinds scraper. We'll add methods to it as we go:
 
 ```python
 import re
@@ -92,13 +92,13 @@ class SelectMindsJobScraper(object):
         self.session = requests.Session()
 ```
 
-Now, let's go back and take a look at the first XHR request again. In the Chrome developer tools, search for the URL used in the
+Now, go back and take a look at that first XHR request again. In the Chrome developer tools, search for the URL used in the
 first POST request:
 
 ![1st_request_search](/assets/eygbl/1st_request_search.png)
 
-Click on the search result to open up the code in the sources tab. Inside the Sources tab will you'll see that the first
-XHR request is implemented by code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js)
+Click on the search result to open up the code in the Sources tab. Inside the Sources tab you'll see that the first XHR
+request is implemented by code in [job_search_banner.js](https://eygbl.referrals.selectminds.com/job_search_banner.js)
 which gets triggered when the Search button is clicked:
 
 <span id="first_request"></span>
@@ -126,8 +126,8 @@ j$('#jSearchSubmit', search_banner).click(function() {
 ```
 
 The URL is set to the return value of the call to `TVAPP.guid('/ajax/jobs/search/create')`. This method is where the `uid: 219`
-parameter is being generated. To find the source code for this method, go into the console of the Chrome developer tools and type in
-`TVAPP.guid`. The console will display the beginning of the code for this method.
+parameter is being generated. To find the source code for this method go into the console of the Chrome developer tools and type
+in `TVAPP.guid`. The console will display the beginning of the code for this method.
 
 ![guid_method](/assets/eygbl/5.png)
 
@@ -155,12 +155,29 @@ TVAPP.guid = function(url) {
 
 So, the `uid` comes from the milliseconds portion of the current local time.
 
+```python
+    def guid(self):
+        dt = datetime.now()
+        guid = dt.microsecond / 1000
+        return guid
+```
+
 Now that we've seen how the `uid` parameter is being generated, let's see how to get the `tss-token` value required in the
 request headers. Search the HTML for "tss" inside the jobs site's main page and you'll see an `<input>` element containing
 the token value:
 
 ```html
 <input type="hidden" name="tsstoken" id="tsstoken" value="BNT9g...">
+```
+
+We can look that up using the tag name and id in BeautifulSoup:
+
+```python
+    def get_tss_token(self, soup):
+        i = soup.find('input', id='tsstoken')
+        tss_token = i['value']
+
+        return tss_token
 ```
 
 At this point, we've seen enough to implement the first request in our scraper:
@@ -210,7 +227,7 @@ At this point, we've seen enough to implement the first request in our scraper:
         job_search_id = self.get_job_search_id(tss_token)
 ```
 
-Now that we've got our `job_search_id` value from the first request, we're ready to move on and see how the second XHR request is generated.
+Now that we've got the `job_search_id` value from the first request, we're ready to move on and see how the second XHR request is generated.
 [As shown earlier](#first_request) in the code bound to the Search button, the job_search_id value from the response is passed as the argument
 to `loadSearchResults`:
 
