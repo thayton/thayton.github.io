@@ -19,7 +19,7 @@ need to recreate in order to scrape the jobs from the site.
 
 ![0](/assets/eygbl/0.png)
 
-The first request is a POST request to
+The first request is a POST to
 
 `https://eygbl.referrals.selectminds.com/ajax/jobs/search/create`
 
@@ -31,8 +31,8 @@ We also need to pay attention to the request headers:
 
 ![4](/assets/eygbl/4.png)
 
-The `tss-token` header is required when we send our request. Without it we'll get back a 403 Invalid Access response from the
-server. When a valid request is made the response sent back is a JSON string with the following fields:
+The `tss-token` header is required. Without it we'll get back a 403 Invalid Access response from the
+server. When a valid request is made the response sent back will be a JSON string with the following fields:
 
 ```json
 {
@@ -44,7 +44,7 @@ server. When a valid request is made the response sent back is a JSON string wit
 }
 ```
 
-We need the `JobSearch.id` value in the response because it's used as a parameter in the second XHR request, a POST to
+We'll need to save the `JobSearch.id` value from the response because it's used as a parameter in the second XHR request, a POST to
 
 `https://eygbl.referrals.selectminds.com/ajax/content/job_results`
 
@@ -125,9 +125,13 @@ j$('#jSearchSubmit', search_banner).click(function() {
 });
 ```
 
-The URL is set to the return value of the call to `TVAPP.guid('/ajax/jobs/search/create')`. This method is where the `uid: 219`
-parameter is being generated. To find the source code for this method go into the console of the Chrome developer tools and type
-in `TVAPP.guid`. The console will display the beginning of the code for this method.
+The URL is set to the return value of the call to
+
+`TVAPP.guid('/ajax/jobs/search/create')`
+
+This method is where the `uid: 219`parameter is being generated. To find the source code for this method go
+into the console of the Chrome developer tools and type in `TVAPP.guid`. The console will display the beginning
+of the code for this method.
 
 ![guid_method](/assets/eygbl/5.png)
 
@@ -153,7 +157,9 @@ TVAPP.guid = function(url) {
 };
 ```
 
-So, the `uid` comes from the milliseconds portion of the current local time.
+So, the `uid` comes from the milliseconds portion of the current local time `date.getMilliseconds()`. Let's add the corresonding
+method inside our scraper:
+
 
 ```python
     def guid(self):
