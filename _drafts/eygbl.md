@@ -222,7 +222,7 @@ def get_job_search_id(self, tss_token):
 
     return data['Result']['JobSearch.id']
 
-def scrape(self, filter_langs=[]):
+def scrape(self):
     jobs = []
         
     resp = self.session.get(self.url)
@@ -354,9 +354,97 @@ def load_search_results(self, tss_token, job_search_id, short_name, pageno=1):
     return data['Result']
 ```
 
-At this point you should be able to follow through the code of the scraper. A `scrape()` method has
-been added that uses the methods we've developed so far to load the jobs from the site, feed the HTML
-into BeautifulSoup and extract the jobs information:
+We have everything we need at this point jobs from the site, feed the HTML into BeautifulSoup and
+extract the jobs information:
+
+```python
+def scrape(self):
+    jobs = []
+        
+    resp = self.session.get(self.url)
+    soup = BeautifulSoup(resp.text, 'lxml')
+        
+    tss_token = self.get_tss_token(soup)
+    short_name = self.get_site_short_name(soup)
+
+    job_search_id = self.get_job_search_id(tss_token)
+
+    pageno = 1
+
+    while True:
+        self.logger.info(f'Getting page {pageno}')
+            
+        html = self.load_search_results(tss_token, job_search_id, short_name, pageno)
+        soup = BeautifulSoup(html, 'html.parser')
+
+        d = soup.find('div', id='job_results_list_hldr')
+            
+        x = {'class': 'job_link'}
+        y = {'class': 'location'}
+            
+        for a in d.find_all('a', attrs=x):
+            l = a.find_next('span', attrs=y)
+            
+            job = {}
+            job['title'] = a.text
+            job['url'] = urljoin(self.url, a['href'])
+            job['location'] = l.text.strip()
+
+            jobs.append(job)
+
+        self.logger.info(f'{len(jobs)} jobs scraped')
+
+        d = soup.find('div', id='jPaginateNumPages')
+        num_pages = int(float(d.text))
+            
+        if pageno >= num_pages:
+            break
+
+        time.sleep(1) # Don't hit the server too quickly
+        pageno += 1
+```
+
+Let's go over the parts of the code that are new. First we'll start with the code that parses the HTML.
+Examine the HTML of the jobs page after conducting a search:
+
+![jobs_html](/assets/eygbl/jobs_html.png)
+
+We see that jobs are contained in `div#job_results_list_hldr`. We can find the job links under this div
+and each job's location using their classes, `job_link` and `location` respectively:
+
+```python
+html = self.load_search_results(tss_token, job_search_id, short_name, pageno)
+soup = BeautifulSoup(html, 'html.parser')
+
+d = soup.find('div', id='job_results_list_hldr')
+           
+x = {'class': 'job_link'}
+y = {'class': 'location'}
+            
+for a in d.find_all('a', attrs=x):
+    l = a.find_next('span', attrs=y)
+```
+
+Since pagination is handled via a parameter we can goto the next page by simply incrementing the `pageno`
+variable. We need to check when we've reached the last page. Examine the HTML for the pagination links at
+the bottom of the search results. One of the `div` elements contains the total number of pages for the search
+results:
+
+![pagination_html](/assets/eygbl/pagination_html.png)
+
+We can look for this element in BeautifulSoup and see if its value matches the number of pages we've scraped
+so far. If it does, we've reached the last page:
+
+```python
+d = soup.find('div', id='jPaginateNumPages')
+num_pages = int(float(d.text))
+            
+if pageno >= num_pages:
+    break
+
+time.sleep(1) # Don't hit the server too quickly
+pageno += 1
+```
 
 ```python
 import re
@@ -451,7 +539,7 @@ class SelectMindsJobScraper(object):
         
         return data['Result']
     
-    def scrape(self, filter_langs=[]):
+    def scrape(self):
         jobs = []
         
         resp = self.session.get(self.url)
