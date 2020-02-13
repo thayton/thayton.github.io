@@ -53,8 +53,8 @@ with the following query string parameters
 ![3](/assets/eygbl/3.png)
 
 We'll see where the rest of the parameters come from later in the article when we dig into how this request
-gets generated. The response for this request contains the HTML for the jobs that we'll scrape within the
-`Result` field of the JSON string returned:
+gets generated. The response for this request contains the HTML for the jobs that we'll scrape in the `Result`
+field of the JSON string returned:
 
 ```json
 {
@@ -65,8 +65,8 @@ gets generated. The response for this request contains the HTML for the jobs tha
 
 ## Implementation
 
-Now that we've seen an overview of the requests, let's dig into the site's code to see how the two XHR requests
-are being generated so that we can duplicate them in our scraper. First, let's create a base class and some boilerplate
+Now that we've gotten an overview of the requests, let's dig into the site's code to see how the two XHR requests
+are being generated so that we can duplicate them in our scraper. First, let's create a base class with some boilerplate
 code for our SelectMinds scraper. We'll add methods to it as we go:
 
 ```python
@@ -92,7 +92,7 @@ class SelectMindsJobScraper(object):
         self.session = requests.Session()
 ```
 
-Now, go back and take a look at that first XHR request again. In the Chrome developer tools, search for the URL used in the
+Now we'll go back and take a look at that first XHR request again. In the Chrome developer tools, search for the URL used in the
 first POST request:
 
 ![1st_request_search](/assets/eygbl/1st_request_search.png)
@@ -157,7 +157,7 @@ TVAPP.guid = function(url) {
 };
 ```
 
-So, the `uid` comes from the milliseconds portion of the current local time `date.getMilliseconds()`. Let's add the corresponding
+So the `uid` comes from the milliseconds portion of the current local time `date.getMilliseconds()`. Let's add the corresponding
 method inside our scraper:
 
 ```python
@@ -168,7 +168,7 @@ def guid(self):
 ```
 
 Now that we've seen how the `uid` parameter is being generated, let's see how to get the `tss-token` value required in the
-request headers. Search the HTML for "tss" inside the job site's main page and you'll see an `<input>` element containing
+request headers. Search the HTML for `tss` inside the job site's main page and you'll find an `<input>` element containing
 the token value:
 
 ```html
@@ -230,9 +230,11 @@ def scrape(self):
         
     tss_token = self.get_tss_token(soup)
     job_search_id = self.get_job_search_id(tss_token)
+    
+    ...
 ```
 
-Now that we've got the `job_search_id` value from the first request, we're ready to move on and see how the second XHR request is generated.
+Now that we have the `job_search_id` value from the first request, we're ready to move on and see how the second XHR request is generated.
 [As shown earlier](#first_request) in the code bound to the Search button, the job_search_id value from the first response is passed as the
 argument to `loadSearchResults`:
 
@@ -296,7 +298,7 @@ via `page` in `data`:
 ```
 
 We can extract `TVAPP.property.site.short_name` from the HTML on the main page. View the HTML on the job site's main search
-page and search for `TVAPP` and you'll see where `TVAPP.property.site.short_name` is set:
+page and search for `TVAPP` and you'll find where `TVAPP.property.site.short_name` is set:
 
 ```HTML
  <script type="text/javascript">
@@ -330,7 +332,7 @@ def get_site_short_name(self, soup):
     return short_name
 ```
 
-We've got enough now to replicate the second request, using our own version of `loadSearchResults`:
+Now we have enough information to replicate the second request with our own version of `loadSearchResults`:
 
 ```python
 def load_search_results(self, tss_token, job_search_id, short_name, pageno=1):
@@ -354,8 +356,7 @@ def load_search_results(self, tss_token, job_search_id, short_name, pageno=1):
     return data['Result']
 ```
 
-We have everything we need at this point jobs from the site, feed the HTML into BeautifulSoup and
-extract the jobs information:
+We have everything we need at this point to complete our `scrape()` method:
 
 ```python
 def scrape(self):
@@ -404,13 +405,14 @@ def scrape(self):
         pageno += 1
 ```
 
-Let's go over the parts of the code that are new. First we'll start with the code that parses the HTML.
-Examine the HTML of the jobs page after conducting a search:
+Let's go over the parts of the code that are new. First we'll start with the code that parses the HTML
+returned by `load_search_results`. Examine the HTML on jobs page after submitting a search:
 
 ![jobs_html](/assets/eygbl/jobs_html.png)
 
-We see that jobs are contained in `div#job_results_list_hldr`. We can find the job links under this div
-and each job's location using their classes, `job_link` and `location` respectively:
+We see that jobs are contained in `div#job_results_list_hldr`. We can find the job links and location
+under this div using classes `job_link` and `location` respectively after feeding the HTML into
+BeautifulSoup:
 
 ```python
 html = self.load_search_results(tss_token, job_search_id, short_name, pageno)
@@ -426,14 +428,16 @@ for a in d.find_all('a', attrs=x):
 ```
 
 Since pagination is handled via a parameter we can goto the next page by simply incrementing the `pageno`
-variable. We need to check when we've reached the last page. Examine the HTML for the pagination links at
-the bottom of the search results. One of the `div` elements contains the total number of pages for the search
-results:
+variable that gets passed to `load_search_results`. We do need a way to check when we've reached the last
+page though.
+
+Examine the HTML for the pagination links at the bottom of the search results and you'll see that one of
+the `div` elements contains the total number of pages for the search results:
 
 ![pagination_html](/assets/eygbl/pagination_html.png)
 
-We can look for this element in BeautifulSoup and see if its value matches the number of pages we've scraped
-so far. If it does, we've reached the last page:
+We can compare this element's value with the number of pages we've scraped so far, and if the two values
+are equal, it means we've reached the last page:
 
 ```python
 d = soup.find('div', id='jPaginateNumPages')
